@@ -32,15 +32,15 @@ Features:
 other:
 	multiplayer?
 	dungeons
+	weather?
+	fire?
+	knight/day
 
 technologies used:
-	Unity?
 	engine?
-	Websockets
-	Server?
-	Flask
-	Front End
- 	HTML, CSS, JS
+	Websockets?
+	Flask Server
+	Front End: HTML, CSS, JS
 	ASCII
 	API of leaderboards
 	what free API's are there?
@@ -48,31 +48,30 @@ technologies used:
 	Database for maps,items,monster types and character data
 
 Tables:
-Users:
-	Username
-	password
-	current char name
-	char stats(str,dex,per,health,thirst,hunger,score)
-	gear(armor,weapon,item,inv)
-	location (state?)
-Monstersinworld:
-	type
-	name
-	stats
-	location
-	description
-	location
-
-Items:
-	stats
-	desciption
-	location
-Maps:
-	entire grid and state of grid
-	movement map
-	User
-	Monstersinworld
-	Items
+	Users:
+		Username
+		password
+		current char name
+		char stats(str,dex,per,health,thirst,hunger,score)
+		gear(armor,weapon,item,inv)
+		location (state?)
+	Monsters:
+		type
+		name
+		stats
+		location
+		description
+		location
+	Items:
+		stats
+		desciption
+		location
+	Maps:
+		entire grid and state of grid
+		movement map
+		User
+		Monstersinworld
+		Items
 
 Endpoints (3 templates):
 	Login page
@@ -85,7 +84,7 @@ Progression:
 	create new game
 	character gen
 	generate world terrain
-	populate with items
+	populate with items 
 	populate with monsters
 	spawn player
 	main game loop
@@ -95,3 +94,14 @@ Progression:
 	display main menu
 	logout
 	back to login page
+
+Char Gen:
+	Str: Base+Weapon-Armor=Damage
+	Dex: Base+Weapon-Armor=To-Hit
+	Per: Sight radius?
+	Con: 
+	Start Equipment: TBD
+
+Monster Gen:
+	All the stats of PCs
+	Scaling: Time, distance or Level?
