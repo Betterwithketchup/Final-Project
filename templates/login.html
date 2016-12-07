@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block header %} {{ header }} {% endblock %}
+
+
+{% block content %}
+<h3>{{ content }}</h3>
+<div id="form">
+	<form action='/main' method='POST'>
+		<input type="text" name="name" placeholder="Name">
+		<input type="text" name="password" placeholder="Password">
+		<input id="login" type="submit">
+	</form>
+</div>
+<button id="register">Register</button>
+<button id="leaderboard">Leaderboard</button>
+{% endblock %}

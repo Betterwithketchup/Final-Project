@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block header %} {{ header }} {% endblock %}
+
+
+{% block content %}
+<h1>{{ content }}</h1>
+<form action="/login" method="POST" id="getout">
+	<input type="submit" value="logout" id="logout"></input>
+</form>
+<button id="userposts">Your Posts</button>
+<button id="refresh">Refresh</button>
+<form action="/main" method="POST" id="newpost">
+	<input type="text" name="title">
+	<input type="text" name="content">
+	<input type="submit" id="postsubmit">
+</form>
+<div id="start">
+	<ul id="listposts">
+	</ul>
+</div>
+
+{% endblock %}
+

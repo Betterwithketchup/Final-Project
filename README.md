@@ -1,5 +1,5 @@
 # Final	Project
-To Be Named Game
+Radioactive Cavelier
 todo:
 	ERDs
 	user stories
@@ -48,30 +48,34 @@ technologies used:
 	Database for maps,items,monster types and character data
 
 Tables:
+Users and Monsters inherit from the same class
 	Users:
 		Username
 		password
-		current char name
-		char stats(str,dex,per,health,thirst,hunger,score)
-		gear(armor,weapon,item,inv)
-		location (state?)
+		CHAR NAME
+		STR
+		CON
+		DEX
+		HP
+		NEEDS
+		SCORE
+		gear(armor,weapon,item,inv)=foreign key  in items
 	Monsters:
 		type
 		name
-		stats
+		STATS
 		location
 		description
 		location
 	Items:
 		stats
 		desciption
-		location
 	Maps:
 		entire grid and state of grid
 		movement map
-		User
-		Monstersinworld
-		Items
+		User=foreign key, and location
+		Monsters=foreign key and location
+		Items=foreign key, and location
 
 Endpoints (3 templates):
 	Login page
