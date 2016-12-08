@@ -24,19 +24,22 @@ def data():
 	if islegit(name,password)=="True":
 		session['id']=user.id
 		session['logged_in']=True
+		print(session.get('id'))
+
 		return redirect(url_for('main'))
 	else:
 		session['logged_in']=False
 		return redirect(url_for('login'))
 def islegit(Name,wordpass):
-		user = User.query.filter_by(username=Name).first()
-		if user != None:
-			if bcrypt.check_password_hash(user.password, wordpass)==True:
-				return "True"
-			else:
-				return "False"
+	print("atleast")
+	user = User.query.filter_by(username=Name).first()
+	if user != None:
+		if bcrypt.check_password_hash(user.password, wordpass)==True:
+			return "True"
 		else:
 			return "False"
+	else:
+		return "False"
 
 @app.route('/new', methods=['POST'])
 def addin():
@@ -51,6 +54,12 @@ def main():
 		return render_template('mainpage.html',title="Welcome",)
 	return redirect(url_for('login'))
 
+@app.route('/load', methods=['GET'])
+def load():
+	user=User.query.filter_by(id=(session.get('id'))).first()
+	thingy = [user.id]
+	return thingy
+
 if __name__ == "__main__":
-	app.secret_key = os.urandom(30)
+	app.secret_key = os.urandom(20)
 	app.run('127.0.0.1',3000,debug=True)
