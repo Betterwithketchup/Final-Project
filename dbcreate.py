@@ -10,8 +10,10 @@ class User(db.Model):
 	username = db.Column(db.String)
 	password = db.Column(db.String)
 	charname = db.Column(db.String)
-	stats = db.Column(db.LargeBinary)
-	gear = db.Column(db.LargeBinary)
+	stats = db.Column(db.PickleType())
+	gear = db.Column(db.PickleType())
+	spawn = db.relationship('Spawn', backref='user',lazy='select')
+	usermap = db.relationship('Map', backref='user',lazy='select')
 
 	def __init__(self, username, password, charname, stats,gear):
 		self.username = username
@@ -25,8 +27,10 @@ class Monster(db.Model):
 	name = db.Column(db.String)
 	description = db.Column(db.String)
 	mtype = db.Column(db.String)
-	stats = db.Column(db.LargeBinary)
-	gear = db.Column(db.LargeBinary)
+	stats = db.Column(db.PickleType())
+	gear = db.Column(db.PickleType())
+	spawn = db.relationship('Spawn', backref='monster',lazy='select')
+	mapid = db.Column(db.Integer, db.ForeignKey('map.id'))
 
 	def __init__(self,name, stats,gear):
 		self.name = name
@@ -38,14 +42,30 @@ class Item(db.Model):
 	name = db.Column(db.String)
 	description = db.Column(db.String)
 	stats = db.Column(db.LargeBinary)
+	spawn = db.relationship('Spawn', backref='item',lazy='select')
+
 
 	def __init__(self,name, stats, description):
 		self.name = name
 		self.stats = stats
 		self.description = description
+
+class Spawn(db.Model):
+	id = db.Column(db.Integer, primary_key = True)
+	userid = db.Column(db.Integer, db.ForeignKey('user.id'))
+	monsterid = db.Column(db.Integer, db.ForeignKey('monster.id'))
+	itemid = db.Column(db.Integer, db.ForeignKey('item.id'))
+
+	def __init__(self, userid, monsterid, itemid):
+		self.userid = userid
+		self.monsterid = monsterid
+		self.itemid = itemid
+		
 		
 class Map(db.Model):
 	id = db.Column(db.Integer, primary_key = True)
+	userid = db.Column(db.Integer, db.ForeignKey('user.id'))
+	monstermap = db.relationship('Monster', backref='map',lazy='select')
 	terrain = db.Column(db.LargeBinary)
 	movement = db.Column(db.LargeBinary)
 
@@ -58,6 +78,6 @@ class Map(db.Model):
 if __name__ == "__main__":
 	db.drop_all()
 	db.create_all()
-	User1 = User("A","321","B")
+	User1 = User("A","$2b$12$2FuNpiQtd4ChkJlHhI9GU.K87giuywJ3VGMGPXgZlwS30R3sl2fwC","B",[5,5],[1,2])
 	db.session.add(User1)
 	db.session.commit()

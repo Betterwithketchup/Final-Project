@@ -11,16 +11,30 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 class Users():
-	thisthing=False
 	def inituser(name,Password):
 		print(name,Password)
 		if name==User.query.filter_by(username=name).first():
 			return None
 		name = name
 		password =bcrypt.generate_password_hash(Password)
-		person = User(name,password)
+		person = User(name,password,"",[],[])
 		db.session.add(person)
 		db.session.commit()
 		return "Done"
 
-	
+	def initchar(userid,charname,stats,gear):
+		user=User.query.filter_by(id=userid).first()
+		user.charname=charname
+		user.stats=stats
+		user.gear=gear
+		db.session.commit()
+		return "Done"
+
+class Monsters():
+	def initmon(userid,charname,stats,gear):
+		user=User.query.filter_by(id=userid).first()
+		user.charname=charname
+		user.stats=stats
+		user.gear=gear
+		db.session.commit()
+		return "Done"

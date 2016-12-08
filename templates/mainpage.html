@@ -10,17 +10,10 @@
 <form action="/login" method="POST" id="getout">
 	<input type="submit" value="logout" id="logout"></input>
 </form>
-<button id="userposts">Your Posts</button>
-<button id="refresh">Refresh</button>
-<form action="/main" method="POST" id="newpost">
-	<input type="text" name="title">
-	<input type="text" name="content">
-	<input type="submit" id="postsubmit">
-</form>
-<div id="start">
-	<ul id="listposts">
-	</ul>
-</div>
+
+<body onload = 'Game.init()'>
+    <h1>Radioactive Cavalier</h1>
+</body>
 
 {% endblock %}
 
