@@ -73,14 +73,17 @@ Users and Monsters inherit from the same class
 	Maps:
 		entire grid and state of grid
 		movement map
-		User=foreign key, and location
-		Monsters=foreign key and location
-		Items=foreign key, and location
+		User=User.id, location
+		Monsters=Monsters.id, location
+		Items=items.id, and location
 
-Endpoints (3 templates):
+Endpoints and (3 templates):
 	Login page
 	main game page
 	leaderboard
+	-/load/<character>
+	-/save/<character>
+	-/scores
 
 Progression:
 	User registers
@@ -103,7 +106,7 @@ Char Gen:
 	Str: Base+Weapon-Armor=Damage
 	Dex: Base+Weapon-Armor=To-Hit
 	Per: Sight radius?
-	Con: 
+	Con: HP
 	Start Equipment: TBD
 
 Monster Gen:

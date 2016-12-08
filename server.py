@@ -5,6 +5,7 @@ app = Flask(__name__)
 
 @app.route('/',methods=['GET'])
 def nothere():
+	return render_template("login.html",title="Login?")
 
 
 if __name__ == "__main__":

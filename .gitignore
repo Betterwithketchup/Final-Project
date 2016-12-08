@@ -1,0 +1,9 @@
+*.db
+*.pyc
+*.csv
+*.woff
+*.woff2
+*.eot
+*.ttf
+node_modules/
+__pycache__/
