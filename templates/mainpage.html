@@ -7,13 +7,14 @@
 
 {% block content %}
 <h1>{{ content }}</h1>
-<form action="/login" method="POST" id="getout">
+<form action="/weout" method="POST" id="getout" >
 	<input type="submit" value="logout" id="logout"></input>
 </form>
+<button id="load" class=' ' action="/load">Load</button>
 
-<body onload = 'Game.init()'>
+<body>
     <h1>Radioactive Cavalier</h1>
 </body>
-
+<!-- onload = 'Game.init()' -->
 {% endblock %}
 
