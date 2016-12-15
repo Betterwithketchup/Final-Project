@@ -2,7 +2,6 @@ from flask import Flask, request, render_template, jsonify, session, redirect,ur
 from Models import *
 import os
 app = Flask(__name__)
-USERNAME="THIS"
 
 
 @app.route('/',methods=['GET'])
@@ -41,8 +40,6 @@ def data():
 		session.modified = True
 		USERNAME=user.id
 		print(USERNAME)
-		#response=Response(str(USERNAME))
-		#response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
 		return redirect(url_for('main'))
 	else:
 		session['logged_in']=False
@@ -71,30 +68,30 @@ def main():
 	print(session.get('logged_in'))
 	if session.get('logged_in')==True:
 		print("session:"+str(session.get('user')))
-	#	session['logged_in']=True
-		return render_template('mainpage.html',content=str(session.get('id')),)
+		return render_template('mainpage.html',)
 	else:
 		return redirect(url_for('login'))
 
-#AAAAHHHHHHHHH
 @app.route('/load', methods=['GET','POST'])
 def load():
 	if session.get('logged_in')==True:
-		print("THISTHING")
-	thinger=request.form['name']
-	print(thinger)
-	#name=username
-	print("this is a name: "+str(session.get('user')))
-	#print(USERNAME)
-	#user=User.query.filter_by(username=name).first()
-	# thingy = [user.id,user.username,user.charname]
-	# return jsonify(thinger)
-	# else:
-	# 	return "na"
-	#session['id']
-	#session.pop('logged_in',False)
-	#print("logged?:"+str(session.get('user')))
-	response = Response(thinger)
+		#print("THISTHING")
+		# thinger=request.form['name']
+		# print(thinger)
+		#print("this is a name: "+str(session.get('user')))
+		#print(USERNAME)
+		user=User.query.filter_by(username=str(session.get('user'))).first()
+		thingy = [user.id,user.username,user.stats]
+		# else:
+		# 	return "na"
+		#session['id']
+		#session.pop('logged_in',False)
+		#print("logged?:"+str(session.get('user')))
+		response = jsonify(thingy)
+		response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+		response.headers['Access-Control-Allow-Credentials'] = 'true'	
+		return response
+	response = Response("nah")
 	response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
 	response.headers['Access-Control-Allow-Credentials'] = 'true'	
 	return response

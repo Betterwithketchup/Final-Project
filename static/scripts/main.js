@@ -1,7 +1,7 @@
 var $userid=""
 $(document).ready(function(){
-/*	console.log("Ping!");
-	$('#login').on('click', function(event){
+	console.log("Ping!");
+	/*$('#login').on('click', function(event){
 		//event.preventDefault();
     	var $username = $("input[name='username']").val();
     	var $password = $("input[name='password']").val();
@@ -21,16 +21,16 @@ $(document).ready(function(){
 	$('#load').on('click', function(){
 		$.ajax({
 			method:"POST",
-			url: "http://127.0.0.1:3000/load",
+			url: "http://localhost:3000/load",
 			xhrFields: { withCredentials:true },
-			data: {'name':$('.h1').val()},
 			success: function (response) {
-
 		$('#load').attr('class',response)
-
       	//console.log("done!"+ something.getAllResponseHeaders());
       	console.log(response)
-      	console.log($('.title').html)
+      	x=response[2][0]
+      	y=response[2][0]
+      	Game.player = null
+      	Game.player= new Player(x,y, '#FF0000')
     }
 		});
 
@@ -76,12 +76,13 @@ var Game = {
     engine: null,
     player: null,
     monsters: [],
-    screenWidth: 100,
-    screenHeight: 60,
+    screenWidth: 30,
+    screenHeight: 20,
     init: function() {
 
         this.display = new ROT.Display();
-        this.display.setOptions({width:this.screenWidth,height:this.screenHeight})
+        this.display.setOptions({width:this.screenWidth,height:this.screenHeight,forceSquareRatio:true})
+        //this.display.setOptions({width:50,height:30})
         document.body.appendChild(this.display.getContainer());
         
         this._generateMap();
@@ -96,9 +97,12 @@ var Game = {
         this.engine = new ROT.Engine(scheduler);
         this.engine.start();
     },
-    
+    /*_loadGame: function(){
+    	return;
+
+    }*/
     _generateMap: function() {
-        var digger = new ROT.Map.Cellular(this.screenWidth,this.screenHeight,{
+        var digger = new ROT.Map.Cellular(100,60,{
 	   	//born: [4, 5, 6, 7, 8],
 	   	//survive: [2, 3, 4, 5],
 	    connected: true
@@ -117,32 +121,35 @@ var Game = {
         }
         for (var i=49; i>=0; i--) {
         digger.create(digCallback.bind(this));
+        digger.connect(this.display.DEBUG,0)
         }
     	var waterer = new ROT.Map.Cellular(this.screenWidth,this.screenHeight,{
 		   	born: [4, 5, 6, 7, 8],
 		   	survive: [3,4, 5],});
-	    waterer.randomize(0.1)
+	    waterer.randomize(0.2)
     	var watCallback = function(x, y, value) {
         	var key = x+","+y;
-            if (value) { 
+            if (value & this.map[key]=='.') { 
 			this.map[key] = "~";
             return; 
         	}            
             //this.map[key] = null;
-           freeCells.push(key);
+          // freeCells.push(key);
         }
         for (var i=40; i>=0; i--) {
     		waterer.create(watCallback.bind(this));
 		}
-        digger.connect(function(){},1)
-        this._generateBoxes(freeCells);
-               this._drawWholeMap();
-
         this._generateMonsters(freeCells);
+        this._generateBoxes(freeCells);
         this._createPlayer(freeCells);
+        //this._drawWholeMap();
+
+        
+        
     },
     
     _createPlayer: function(freeCells) {
+    	if (this.player!=null) {return;}
         var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
         var key = freeCells.splice(index, 1)[0];
         if (key!=null) {
@@ -169,17 +176,27 @@ var Game = {
           	var parts = key.split(",");
           	var x = parseInt(parts[0]);
         	var y = parseInt(parts[1]);
-        	this.display.draw(x, y, 'K', '#FF0000');
+        	//this.display.draw(x, y, 'K', '#FF0000');
 
         	this.monsters.push(new Monster(x,y,Math.floor(ROT.RNG.getUniform()*20)))
         }
     },
     
     _drawWholeMap: function() {
+    	/*var px = this.player._x-25
+        var py = this.player._y-25
+    	for (var i = 20 - 1; i >= 0; i--) {
+    		for (var j = 20 - 1; j >= 0; j--) {
+    			this.display.draw(i, j, this.map[px+i,py+j]);
+    		}
+    	}*/
         for (var key in this.map) {
+        	var i=0
             var parts = key.split(",");
             var x = parseInt(parts[0]);
             var y = parseInt(parts[1]);
+            var px = this.player._x
+            var py = this.player._y
             if (this.map[key]=="#") {
             	this.display.draw(x, y, this.map[key], '#21CC04');
             }
@@ -209,26 +226,23 @@ var Monster = class Monster{
 		return 100;
 	}
 	draw() {
-	Game.map[this.x+","+this.y]='0'
-   	
-    
+	Game.map[this.x+","+this.y]='K'
     //console.log(this.x+","+this.y)
-
 	} 
 	act(){
 		Game.engine.lock();
 		//this.draw()
 		Game.map[this.x+","+this.y]='K'
-		Game.display.draw(this.x, this.y, 'K', '#FF0000');
+		//Game.display.draw(this.x, this.y, 'K', '#FF0000');
 		Game.engine.unlock();
 	}
 }
-var Player = function(x, y,color) {
+var Player = function(x, y,color,stats) {
     this._x = x;
     this._y = y;
     this._draw();
     this.color=color;
-    this.stats=[20,1,2,0,0]
+    this.stats=stats
     this.inv=[];
 }
 Player.prototype.getSpeed = function(){
@@ -253,7 +267,7 @@ Player.prototype.handleEvent = function(e) {
     keyMap[32] = 9;
 
     var code = e.keyCode;
-    /* one of numpad directions? */
+    /* one of numpad/wasd directions? */
     if (!(code in keyMap)) { return; }
     //action for enter and spacebar
     if (code == 13 || code == 32) {
@@ -269,22 +283,62 @@ Player.prototype.handleEvent = function(e) {
     //console.log(Game.map)
    	if (Game.map[newKey]!='.') { return; }
    //	console.log(newKey)
-   	//if (Game.map[newKey]==='K') {}
+   	if (Game.map[newKey]==='K') {
+   		
+   	}
 
     Game.display.draw(this._x, this._y, Game.map[this._x+","+this._y],'#995024');
+    Game.map[this._x+","+this._y]='.'  
     this._x = newX;
     this._y = newY;
+    Game.map[this._x+","+this._y]='@'
     this._draw();
     window.removeEventListener("keydown", this);
     Game.engine.unlock();
 }
 
 Player.prototype._draw = function() {
-    Game.display.draw(this._x, this._y, "@", this.color);
+    
+    var px = this._x-10
+    var py = this._y-10
+   // console.log(this._x-5,this._y-5)
+    //console.log(Game.map[(px+","+py)])
+	for (var i = 0 - 1; i <= 20; i++) {
+		for (var j = 0 - 1; j <= 20; j++) {
+            if (Game.map[(px+i)+","+(py+j)]=="#") {
+            	Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#21CC04');
+            }
+           if (Game.map[(px+i)+","+(py+j)]==".") {
+            	Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#995024');
+            }
+            if (Game.map[(px+i)+","+(py+j)]=="*") {
+            	Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#CCB600');
+            }
+            if (Game.map[(px+i)+","+(py+j)]=="~") {
+            	Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#0000FF');
+            }
+            if (Game.map[(px+i)+","+(py+j)]=="K") {
+            	Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#FF0000');
+            }
+            if (Game.map[(px+i)+","+(py+j)]=="@") {
+            	Game.display.draw(i, j, '@', this.color);
+            }
+        	else if (Game.map[(px+i)+","+(py+j)]==null) {
+        		Game.display.draw(i, j, ' ', '#000000');
+        	}        		
+
+		}
+	}
+
+	Game.display.drawText(21,0, `|-------|`);
+	Game.display.drawText(21,1, '%b{black}|'+this._x+', '+this._y+'');
+	Game.display.drawText(29,1,'|')
+	for (var i = 19; i >= 2; i--) {
+		Game.display.drawText(20,i, `|///////|`);
+	}
+	
+	//Game.display.drawText(21,3, `|////////////|`, '#0000FF');
 }    
 Player.prototype._checkAction = function() {
-	this.color=('#ff'+Math.floor(ROT.RNG.getUniform() * 10))
-	Game.display.draw(this._x, this._y, "@", this.color);
+	this.color=('#0000FF')
 }
-
-Game.init();
