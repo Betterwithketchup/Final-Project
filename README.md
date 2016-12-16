@@ -53,9 +53,9 @@ Users and Monsters inherit from the same class
 		Username
 		password
 		CHAR NAME
-		STR
-		CON
-		DEX
+		STR =damage  (mod)+10+weapon
+		CON = HP (mod)+100
+		DEX = ?
 		HP
 		NEEDS
 		SCORE
@@ -69,7 +69,7 @@ Users and Monsters inherit from the same class
 		location
 	Items:
 		stats
-		desciption
+		description
 	Maps:
 		entire grid and state of grid
 		movement map
