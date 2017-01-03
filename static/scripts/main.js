@@ -69,15 +69,22 @@ $(document).ready(function(){
 display = new ROT.Display();
 display.setOptions({width:50,height:10})
 document.body.appendChild(display.getContainer());
-display.drawText(2,2,"Welcome! Start Game? y/n");
+display.drawText(2,2,"Welcome! Start New Game? y/n");
 window.addEventListener("keydown", this);
 handleEvent = function(e) {
    var key = e.keyCode ? e.keyCode : e.which;
 
 	if (key == 89) {
 	window.removeEventListener("keydown",this);
-	document.body.removeChild(display.getContainer());
-	Game.init();
+	display.clear()
+	display.drawText(2,2,"What is your character's name?");
+	$("#charname").show()
+	$("#nextbutton").show()
+	$('#nextbutton').on('click',function(event){$("[type=number]").show()})
+	
+	//document.body.removeChild(display.getContainer());
+	//Game.init();
+	
 	}
     if (key == 78) {
         throw new Error("wey");
@@ -220,7 +227,7 @@ var Game = {
 	            	Game.display.draw(i, j, '@', this.player.color,'#000000');
 	            }
 	        	else if (Game.map[(px+i)+","+(py+j)]==null) {
-	        		Game.display.draw(i, j, ' ', '#000000');
+	        		Game.display.draw(i, j, ' ', '#5C1C99');
         		}        		
 
 			}
@@ -232,12 +239,16 @@ var Game = {
 			Game.display.drawText(i,j,"%b{black}%c{black}-")
 		}
 	}
-		//Game.display.drawText(31,0, `|-----------------|`);
 		Game.display.drawText(31,1, '%b{black}|X:'+this.player._x+', Y:'+this.player._y+'');
 	
-		for (var i = 0; i <= 3; i++) {
-			Game.display.drawText(31,2+i, '%b{black}|'+this.player._stats[i]+'');
-			}
+		Game.display.drawText(31,3, '%b{black}|HP: '+this.player._stats[0]+'');
+		Game.display.drawText(31,4, '%b{black}|STR: '+this.player._stats[1]+'');
+		Game.display.drawText(31,5, '%b{black}|CON: '+this.player._stats[2]+'');
+		Game.display.drawText(31,6, '%b{black}|DEX: '+this.player._stats[3]+'');
+		Game.display.drawText(31,7, '%b{black}|Food: '+this.player.needs[0]+'');
+		Game.display.drawText(31,8, '%b{black}|Water: '+this.player.needs[1]+'');
+
+
 		for (var i = 0; i <= 3; i++) {
 			if (this.player.inv[i]!=null) {
 				Game.display.drawText(31,6+i, '%b{black}|'+this.player.inv[i].desc+'');}
@@ -263,16 +274,17 @@ var Monster = class Monster{
 		return 50;
 	}
 	act(){
-		Game.engine.lock();
+		//Game.engine.lock();
 		//Game.engine.lock()
 		//setTimeout(Game.engine.unlock(), 500);    /* wait for 500ms */
 		//console.log("Monster:"+this.name)
 		Game.map[this.x+","+this.y]='K'
 		if (this.stats[0]<=0) {Game.map[this.x+","+this.y]='.'}
 		Game._drawWholeMap()
-		Game.engine.unlock();
+		//Game.engine.unlock();
 	}
 }
+
 var Player = function(x, y,color,stats,needs,score,inv) {
     this._x = x;
     this._y = y;
@@ -284,7 +296,7 @@ var Player = function(x, y,color,stats,needs,score,inv) {
     this._draw();
 }
 Player.prototype.getSpeed = function(){
-	return 110
+	return 100
 }    
 Player.prototype.act = function() {
     Game.engine.lock();
@@ -337,7 +349,7 @@ Player.prototype.handleEvent = function(e) {
 		Game.engine.unlock();
     	return;
    	}
-   //	console.log(newKey)
+   //	BATTLE
    	if (Game.map[newKey]==='K') {//combat function
    		for (var i = Game.monsters.length - 1; i >= 0; i--) {
    			if (Game.monsters[i].x+","+Game.monsters[i].y===newKey){
