@@ -67,7 +67,7 @@ $(document).ready(function(){
 
 })
 display = new ROT.Display();
-display.setOptions({width:50,height:30})
+display.setOptions({width:50,height:10})
 document.body.appendChild(display.getContainer());
 display.drawText(2,2,"Welcome! Start Game? y/n");
 window.addEventListener("keydown", this);
@@ -92,8 +92,9 @@ var Game = {
     engine: null,
     player: null,
     monsters: [],
-    screenWidth: 40,
-    screenHeight: 26,
+    items: [],
+    screenWidth: 65,
+    screenHeight: 30,
     scheduler: new ROT.Scheduler.Speed(),
     init: function() {
 
@@ -109,11 +110,9 @@ var Game = {
         	this.scheduler.add(this.monsters[i], true);
        }
         
-
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
     },
-
 
     _generateMap: function() {
         var digger = new ROT.Map.Cellular(100,60,{
@@ -156,10 +155,7 @@ var Game = {
         this._generateMonsters(freeCells);
         this._generateBoxes(freeCells);
         this._createPlayer(freeCells);
-        this._drawWholeMap();
-
-        
-        
+        this._drawWholeMap();   
     },
     
     _createPlayer: function(freeCells) {
@@ -171,7 +167,7 @@ var Game = {
     	}
         var x = parseInt(parts[0]);
         var y = parseInt(parts[1]);
-        this.player = new Player(x, y,'#FF0000',[20,5,10,5],[100,100],0);//[HP,STR,CON,DEX],[Food,Water],score
+        this.player = new Player(x, y,'#FF0000',[20,5,10,5],[100,100],0,[]);//[HP,STR,CON,DEX],[Food,Water],score
     },
     
     _generateBoxes: function(freeCells) {
@@ -179,7 +175,10 @@ var Game = {
             var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
             var key = freeCells.splice(index, 1)[0];
             this.map[key] = "*";
-            //console.log(key)
+            var parts = key.split(",");
+          	var x = parseInt(parts[0]);
+        	var y = parseInt(parts[1]);
+            this.items.push(new Item(x,y,[0,10],"Health Potion"))
            
         }
     },
@@ -192,18 +191,16 @@ var Game = {
         	var y = parseInt(parts[1]);
         	//this.display.draw(x, y, 'K', '#FF0000');
 
-        	this.monsters.push(new Monster(x,y,[10,2,0,5]))
+        	this.monsters.push(new Monster(x,y,i,[10,2,0,5]))
         }
     },
-    
+    //display:65,26
     _drawWholeMap: function() {
-    	var px = this.player._x-10
-    	var py = this.player._y-13
-		for (var i = 0 - 1; i <= 20; i++) {
-			for (var j = 0 - 1; j <= 26; j++) {
-				if (Game.map[(px+i)+","+(py+j)]=="@") {
-	            	Game.display.draw(i, j, '@', this.player.color,'#000000');
-	            }
+    	var px = this.player._x-15
+    	var py = this.player._y-15
+		for (var i = 0 - 1; i <= 30; i++) {
+			for (var j = 0 - 1; j <= 30; j++) {
+				
 	            if (Game.map[(px+i)+","+(py+j)]=="#") {
 	            	Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#21CC04');
 	            }
@@ -219,7 +216,9 @@ var Game = {
 	            if (Game.map[(px+i)+","+(py+j)]=="K") {
 	            	Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#FF0000');
 	            }
-	            
+	            if (Game.map[(px+i)+","+(py+j)]=="@") {
+	            	Game.display.draw(i, j, '@', this.player.color,'#000000');
+	            }
 	        	else if (Game.map[(px+i)+","+(py+j)]==null) {
 	        		Game.display.draw(i, j, ' ', '#000000');
         		}        		
@@ -227,50 +226,62 @@ var Game = {
 			}
 		}
 	
-
-		Game.display.drawText(21,0, `|-----------------|`);
-		Game.display.drawText(21,1, '%b{black}%c{black}|||||||||||||||||||||||||');
-		Game.display.drawText(21,1, '%b{black}|X:'+this.player._x+', Y:'+this.player._y+'');
-		Game.display.drawText(39,1,'|')
-	
+		//var filler = "%b{black}";
+		for (var j = 30 - 1; j >= 0; j--) {
+		for (var i = Game.screenWidth - 1; i >= 31; i--) {
+			Game.display.drawText(i,j,"%b{black}%c{black}-")
+		}
+	}
+		//Game.display.drawText(31,0, `|-----------------|`);
+		Game.display.drawText(31,1, '%b{black}|X:'+this.player._x+', Y:'+this.player._y+'');
 	
 		for (var i = 0; i <= 3; i++) {
-			Game.display.drawText(21,2+i, '%b{black}%c{black}||||||||||||||||||||');
-			Game.display.drawText(21,2+i, '%b{black}|'+this.player._stats[i]+'');
-			Game.display.drawText(39,2+i,'|')
-		}
-		for (var i = 0; i <= 19; i++) {
-			Game.display.drawText(21,6+i, `|-----------------|`);
-		}   //this.player.display.draw(x, y, this.map[key]);
+			Game.display.drawText(31,2+i, '%b{black}|'+this.player._stats[i]+'');
+			}
+		for (var i = 0; i <= 3; i++) {
+			if (this.player.inv[i]!=null) {
+				Game.display.drawText(31,6+i, '%b{black}|'+this.player.inv[i].desc+'');}
+			}	  
         }
 }
-
-var Monster = class Monster{
-	constructor(x,y,stats){
+var Item = class Item{
+	constructor(x,y,stats,description){
 		this.x = x;
 		this.y = y;
 		this.stats = stats;
+		this.desc = description;
+	}
+}
+var Monster = class Monster{
+	constructor(x,y,name,stats){
+		this.x = x;
+		this.y = y;
+		this.name = name;
+		this.stats = stats;
 	}
 	getSpeed(){
-		return 100;
+		return 50;
 	}
 	act(){
 		Game.engine.lock();
-		//this.draw()
+		//Game.engine.lock()
+		//setTimeout(Game.engine.unlock(), 500);    /* wait for 500ms */
+		//console.log("Monster:"+this.name)
 		Game.map[this.x+","+this.y]='K'
 		if (this.stats[0]<=0) {Game.map[this.x+","+this.y]='.'}
 		Game._drawWholeMap()
 		Game.engine.unlock();
 	}
 }
-var Player = function(x, y,color,stats,needs,score) {
+var Player = function(x, y,color,stats,needs,score,inv) {
     this._x = x;
     this._y = y;
     this.color=color;
     this._stats=stats;
     this.needs=[100,100];
     this.score=0;
-    //this._draw();
+    this.inv = inv;
+    this._draw();
 }
 Player.prototype.getSpeed = function(){
 	return 110
@@ -308,9 +319,26 @@ Player.prototype.handleEvent = function(e) {
     var newY = this._y + dir[1];
     var newKey = newX + "," + newY;
     if (!(newKey in Game.map)) { return; }
-   	
+
+   	if (Game.map[newKey]==='*') {//pickup function
+   		for (var i = Game.items.length - 1; i >= 0; i--) {
+   			if (Game.items[i].x+","+Game.items[i].y===newKey){
+   				curi = i
+   			}
+   		}
+   		this.inv.push(Game.items[curi])
+		Game.display.draw(this._x, this._y, Game.map[this._x+","+this._y],'#995024');
+	    Game.map[this._x+","+this._y]='.'
+	    this._x = newX;
+	    this._y = newY;
+	    Game.map[this._x+","+this._y]='@'
+		this._draw();
+		window.removeEventListener("keydown", this);
+		Game.engine.unlock();
+    	return;
+   	}
    //	console.log(newKey)
-   	if (Game.map[newKey]==='K') {
+   	if (Game.map[newKey]==='K') {//combat function
    		for (var i = Game.monsters.length - 1; i >= 0; i--) {
    			if (Game.monsters[i].x+","+Game.monsters[i].y===newKey){
    				curm = i
@@ -320,8 +348,8 @@ Player.prototype.handleEvent = function(e) {
    		this._stats[0]=(this._stats[0])-(Game.monsters[curm].stats[1])
    		if (Game.monsters[curm].stats[0]>0) {
    			this._draw();
-   			//window.removeEventListener("keydown", this);
-    		//Game.engine.unlock();
+   			window.removeEventListener("keydown", this);
+    		Game.engine.unlock();
 	    	return;
     	}	
     	if (Game.monsters[curm].stats[0]<=0) {
@@ -352,5 +380,10 @@ Player.prototype._draw = function() {
     Game._drawWholeMap
 }    
 Player.prototype._checkAction = function() {
-	this.color=('#0000FF')
+	this.color=("rgb("+ROT.Color.randomize([100, 128, 230], [30, 10, 20])+")")
+	if (this.inv[0]==null) {return;}
+	number = this.inv[0].stats[1]
+	statto = this.inv[0].stats[0]
+	this._stats[statto]+= number
+	this.inv.splice(0,1)
 }
