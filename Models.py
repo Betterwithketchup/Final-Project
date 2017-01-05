@@ -17,17 +17,18 @@ class Users():
 			return None
 		name = name
 		password =bcrypt.generate_password_hash(Password)
-		person = User(name,password,"",[],[])
+		person = User(name,password)
 		db.session.add(person)
 		db.session.commit()
 		return "Done"
 
-	def initchar(userid,charname,stats,gear):
-		user=User.query.filter_by(id=userid).first()
-		user.charname=charname
-		user.stats=stats
-		user.gear=gear
-		db.session.commit()
+class Characters():
+	def initchar(userid,charname,stats):
+		charname=charname
+		stats=stats
+		#user.gear=gear
+		notperson=Character()
+		db.session.commit(userid,charname,stats)
 		return "Done"
 
 class Monsters():

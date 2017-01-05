@@ -9,19 +9,26 @@ class User(db.Model):
 	id = db.Column(db.Integer, primary_key = True)
 	username = db.Column(db.String)
 	password = db.Column(db.String)
+
+
+	def __init__(self, username, password):
+		self.username = username
+		self.password = password
+
+class Character(db.Model):
+	id = db.Column(db.Integer, primary_key = True)
 	charname = db.Column(db.String)
 	stats = db.Column(db.PickleType())
 	gear = db.Column(db.PickleType())
 	spawn = db.relationship('Spawn', backref='user',lazy='select')
 	usermap = db.relationship('Map', backref='user',lazy='select')
 
-	def __init__(self, username, password, charname, stats,gear):
+	def __init__(self, charname, stats,gear):
 		self.username = username
 		self.password = password
 		self.charname = charname
 		self.stats = stats
 		self.gear = gear
-
 class Monster(db.Model):
 	id = db.Column(db.Integer, primary_key = True)
 	name = db.Column(db.String)
@@ -50,16 +57,16 @@ class Item(db.Model):
 		self.stats = stats
 		self.description = description
 
-class Spawn(db.Model):
-	id = db.Column(db.Integer, primary_key = True)
-	userid = db.Column(db.Integer, db.ForeignKey('user.id'))
-	monsterid = db.Column(db.Integer, db.ForeignKey('monster.id'))
-	itemid = db.Column(db.Integer, db.ForeignKey('item.id'))
+# class Spawn(db.Model):
+# 	id = db.Column(db.Integer, primary_key = True)
+# 	userid = db.Column(db.Integer, db.ForeignKey('user.id'))
+# 	monsterid = db.Column(db.Integer, db.ForeignKey('monster.id'))
+# 	itemid = db.Column(db.Integer, db.ForeignKey('item.id'))
 
-	def __init__(self, userid, monsterid, itemid):
-		self.userid = userid
-		self.monsterid = monsterid
-		self.itemid = itemid
+# 	def __init__(self, userid, monsterid, itemid):
+# 		self.userid = userid
+# 		self.monsterid = monsterid
+# 		self.itemid = itemid
 		
 		
 class Map(db.Model):

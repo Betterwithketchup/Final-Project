@@ -13,16 +13,17 @@
 <button id="load" class=' ' action="/load">Load</button>
 <button id="save" class=' ' action="/save">Save</button>
 <body'>
-    <h1>Radioactive Cavalier</h1>
+    <div>Radioactive Cavalier</div>
 </body>
 
 	<form action="" method="POST" id="notform" >
 		<input hidden type="text" id="charname">
 		<button hidden id="nextbutton">Next!</button>
-		<input hidden type="number" id="strength" min="0" max="5">
-		<input hidden type="number" id="constitution" min="0" max="5">
-		<input hidden type="number" id="dexterity" min="0" max="5">
-		<input hidden type="submit" value="New Character!"></input>
+		<li hidden>STR <input type="number" id="strength" min="0" max="5"></li>
+		<li hidden>CON <input type="number" id="constitution" min="0" max="5"></li>
+		<li hidden>DEX <input type="number" id="dexterity" min="0" max="5"></li>
+		
+		<input hidden id="submitter" type="submit" value="New Character!"></input>
 
 	</form>
 

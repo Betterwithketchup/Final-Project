@@ -63,6 +63,14 @@ def addin():
 	Users.inituser(newuser,newpass)
 	return "Done"#redirect(url_for('login'))
 
+@app.route('/newchar', methods=['POST'])
+def addinchar():
+	charname=request.form['charname']
+	stats=request.form['stats']
+	Characters.initchar(charname,stats)
+	return "Done"
+
+
 @app.route('/main', methods=['GET'])
 def main():
 	print(session.get('logged_in'))

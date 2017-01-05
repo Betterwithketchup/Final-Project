@@ -1,21 +1,11 @@
 # Final	Project
 Radioactive Cavelier
 todo:
-	ERDs
-	user stories
-
-Language:
-	javasript
-	python
-
-
-platform:
-	browser
+	database reset
 
 Genre:
 	survival/rpg
 	setting: future/past?
-
 
 Features:
 	character creation
@@ -30,7 +20,6 @@ Features:
 
 
 other:
-	multiplayer?
 	dungeons
 	weather?
 	fire?
@@ -55,7 +44,7 @@ Users and Monsters inherit from the same class
 		CHAR NAME
 		STR =damage  (mod)+10+weapon
 		CON = HP (mod)+100
-		DEX = ?
+		DEX = Dodge
 		HP
 		NEEDS
 		SCORE
@@ -66,7 +55,6 @@ Users and Monsters inherit from the same class
 		STATS
 		location
 		description
-		location
 	Items:
 		stats
 		description
