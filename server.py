@@ -33,13 +33,13 @@ def data():
 	password=request.form['password']
 	user=User.query.filter_by(username=name).first()
 	if islegit(name,password)=="True":
-		print(user.username)
+		#print(user.username)
 		session['id']=user.id
 		session['logged_in']=True
 		session['user']=user.username
 		session.modified = True
 		USERNAME=user.id
-		print(USERNAME)
+		#print(USERNAME)
 		return redirect(url_for('main'))
 	else:
 		session['logged_in']=False
@@ -73,9 +73,9 @@ def addinchar():
 
 @app.route('/main', methods=['GET'])
 def main():
-	print(session.get('logged_in'))
+	#print(session.get('logged_in'))
 	if session.get('logged_in')==True:
-		print("session:"+str(session.get('user')))
+		#print("session:"+str(session.get('user')))
 		return render_template('mainpage.html',)
 	else:
 		return redirect(url_for('login'))

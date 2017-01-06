@@ -96,7 +96,7 @@ handleEvent = function(e) {
 		document.body.removeChild(display.getContainer());
     	var $charname = $("#charname").val();
     	var $stats = [20,$("#strength").val(),$("#constitution").val(),$("#dexterity").val()];
-    	Game.player = new Player(0,0,$charname,$stats,[100,100],0,[new Item(0,0,true,[1,1],"Fists")])
+    	Game.player = new Player(0,0,$charname,$stats,[10,10],0,[new Item(0,0,"weapon",[1,1],"Fists")])
     	//console.log($stats)
     	/*$.ajax({
         method: "POST",
@@ -213,7 +213,7 @@ var Game = {
             var parts = key.split(",");
           	var x = parseInt(parts[0]);
         	var y = parseInt(parts[1]);
-            this.items.push(new Item(x,y,true,[0,10],"Health Potion"))
+            this.items.push(new Item(x,y,"consumable",[0,10],"Health Potion"))
            
         }
     },
@@ -273,23 +273,26 @@ var Game = {
 		Game.display.drawText(31,4, '%b{black}|STR: '+this.player._stats[1]+'');
 		Game.display.drawText(31,5, '%b{black}|CON: '+this.player._stats[2]+'');
 		Game.display.drawText(31,6, '%b{black}|DEX: '+this.player._stats[3]+'');
-		Game.display.drawText(31,7, '%b{black}|Food: '+this.player.needs[0]+'');
-		Game.display.drawText(31,8, '%b{black}|Water: '+this.player.needs[1]+'');
-
+		
+		
+		if (this.player.needs[0]>50) {Game.display.drawText(31,7, '%b{black}|Food: Hungry');}
+		if (this.player.needs[1]>50) {Game.display.drawText(31,8, '%b{black}|Water: Thirsty');}
 
 		for (var i = 0; i <= 3; i++) {
 			if (this.player.inv[i]!=null) {
+			if (this.player.inv[i].tag=="consumable") {
 				Game.display.drawText(31,10+i, '%b{black}|'+this.player.inv[i].desc+'');
 			if (this.player.select==i) {Game.display.drawText(31,10+i, '%b{blue}|'+this.player.inv[i].desc+'');}
 			}
+		}
 			}	  
         }
 }
 var Item = class Item{
-	constructor(x,y,equip,stats,description){
+	constructor(x,y,tag,stats,description){
 		this.x = x;
 		this.y = y;
-		this.equip = equip;
+		this.tag = tag;
 		this.stats = stats;
 		this.desc = description;
 	}
@@ -321,7 +324,7 @@ var Player = function(x, y,color,stats,needs,score,inv) {
     this._y = y;
     this.color=color;
     this._stats=stats;
-    this.needs=[100,100];
+    this.needs=needs;
     this.score=0;
     this.inv = inv;
     this.select=0;
@@ -332,6 +335,8 @@ Player.prototype.getSpeed = function(){
 }    
 Player.prototype.act = function() {
     Game.engine.lock();
+    this.needs[0]+=2
+    this.needs[1]+=5
     Game._drawWholeMap()
     window.addEventListener("keydown", this);
 }
@@ -403,26 +408,28 @@ Player.prototype.handleEvent = function(e) {
    	}
    //	BATTLE
    	if (Game.map[newKey]==='K') {//combat function
-   		for (var i = Game.monsters.length - 1; i >= 0; i--) {
+   		for (var i = Game.monsters.length - 1; i >= 0; i--) {//which monster is it?
    			if (Game.monsters[i].x+","+Game.monsters[i].y===newKey){
    				curm = i
    			}
    		}
+   		//dodge and hit dice
    		if (Game.monsters[curm].stats[3]<=ROT.RNG.getPercentage()) {
    		Game.monsters[curm].stats[0]=(Game.monsters[curm].stats[0])-(this._stats[1])
-   		console.log("Player hit")
+   		console.log(Game.monsters[curm].stats[0])
    		}
    		if (this._stats[3]<=ROT.RNG.getPercentage()){
    		this._stats[0]=(this._stats[0])-(Game.monsters[curm].stats[1])
-   		console.log("Monster hit")
+   		console.log(this._stats[0])
    		}
-   		if (Game.monsters[curm].stats[0]>0) {
+   		if (Game.monsters[curm].stats[0]>0) {//not dead yet
    			this._draw();
    			window.removeEventListener("keydown", this);
     		Game.engine.unlock();
 	    	return;
     	}	
     	if (Game.monsters[curm].stats[0]<=0) {
+    		console.log("workign")
     		Game.scheduler.remove(Game.monsters[curm]);
     		Game.display.draw(this._x, this._y, Game.map[this._x+","+this._y],'#995024');
 		    Game.map[this._x+","+this._y]='.';
@@ -443,14 +450,13 @@ Player.prototype.handleEvent = function(e) {
     Game.map[this._x+","+this._y]='@'
     this._draw();
     window.removeEventListener("keydown", this);
+    
     Game.engine.unlock();
 }
 
 Player.prototype._draw = function() {
     Game._drawWholeMap;
 }    
-
-
 
 Player.prototype._checkAction = function() {
 	this.color=("rgb("+ROT.Color.randomize([100, 128, 230], [30, 10, 20])+")")
