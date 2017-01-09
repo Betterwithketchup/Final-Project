@@ -28,7 +28,7 @@ class Characters():
 		stats=stats
 		#user.gear=gear
 		notperson=Character()
-		db.session.commit(userid,charname,stats)
+		db.session.commit(userid,charname,stats,)
 		return "Done"
 
 class Monsters():

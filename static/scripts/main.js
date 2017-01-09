@@ -1,4 +1,5 @@
-var $userid=""
+var $userid="";
+var $overplayer = null;
 $(document).ready(function(){
 	console.log("Ping!");
 	/*$('#login').on('click', function(event){
@@ -92,11 +93,12 @@ handleEvent = function(e) {
 	})
 	$('#submitter').on('click',function(event){
 		event.preventDefault();
+		$("li").hide()
 		$("#submitter").hide()
 		document.body.removeChild(display.getContainer());
     	var $charname = $("#charname").val();
     	var $stats = [20,$("#strength").val(),$("#constitution").val(),$("#dexterity").val()];
-    	Game.player = new Player(0,0,$charname,$stats,[10,10],0,[new Item(0,0,"weapon",[1,1],"Fists")])
+    	$overplayer = new Player(0,0,"#FF0000",$stats,[10,10],0,[new Item(0,0,"weapon",[1,1],"Fists")])
     	//console.log($stats)
     	/*$.ajax({
         method: "POST",
@@ -110,9 +112,7 @@ handleEvent = function(e) {
 		
 		Game.init();
 	})
-	
-	
-	
+
 	}
     if (key == 78) {
         throw new Error("wey");
@@ -130,7 +130,7 @@ var Game = {
     items: [],
     screenWidth: 65,
     screenHeight: 30,
-    scheduler: new ROT.Scheduler.Speed(),
+    scheduler: new ROT.Scheduler.Action(),
     init: function() {
 
         this.display = new ROT.Display();
@@ -140,9 +140,9 @@ var Game = {
 
         this._generateMap();
         
-        this.scheduler.add(this.player, true);
+        this.scheduler.add(this.player, true,1);
         for (var i = this.monsters.length - 1; i >= 0; i--) {
-        	this.scheduler.add(this.monsters[i], true);
+        	this.scheduler.add(this.monsters[i], true,1);
        }
         
         this.engine = new ROT.Engine(this.scheduler);
@@ -187,14 +187,15 @@ var Game = {
         for (var i=40; i>=0; i--) {
     		waterer.create(watCallback.bind(this));
 		}
-        this._generateMonsters(freeCells);
+        
         this._generateBoxes(freeCells);
         this._createPlayer(freeCells);
+        this._generateMonsters(freeCells);
         this._drawWholeMap();   
     },
     
     _createPlayer: function(freeCells) {
-    	//if (this.player!=null) {return;}
+    	if ($overplayer!=null) {this.player= $overplayer;}
         var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
         var key = freeCells.splice(index, 1)[0];
         if (key!=null) {
@@ -202,8 +203,9 @@ var Game = {
     	}
         var x = parseInt(parts[0]);
         var y = parseInt(parts[1]);
-        this.player._x =x;//= new Player(x, y,'#FF0000',[20,5,10,20],[100,100],0,[new Item(x,y,true,[1,5],"Sword")]);//[HP,STR,CON,DEX],[Food,Water],score,[inv]
+        this.player._x = x;//= new Player(x, y,'#FF0000',[20,5,10,20],[100,100],0,[new Item(x,y,true,[1,5],"Sword")]);//[HP,STR,CON,DEX],[Food,Water],score,[inv]
    		this.player._y = y;
+   		this.map[key] = "@"
     },
     _generateBoxes: function(freeCells) {
         for (var i=0;i<10;i++) {
@@ -218,14 +220,15 @@ var Game = {
         }
     },
     _generateMonsters: function(freeCells) {
-        for (var i=0;i<10;i++) {
+        for (var i=0;i<5;i++) {
             var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
             var key = freeCells.splice(index, 1)[0];
           	var parts = key.split(",");
           	var x = parseInt(parts[0]);
         	var y = parseInt(parts[1]);
         	//this.display.draw(x, y, 'K', '#FF0000');
-
+        	//this.monsters.push(new Monster(x,y,0,[10,2,0,5]))
+        	this.map[key] = "K";
         	this.monsters.push(new Monster(x,y,i,[10,2,0,5]))
         }
     },
@@ -288,36 +291,67 @@ var Game = {
 			}	  
         }
 }
-var Item = class Item{
-	constructor(x,y,tag,stats,description){
-		this.x = x;
-		this.y = y;
-		this.tag = tag;
-		this.stats = stats;
-		this.desc = description;
+var Item = function(x,y,tag,stats,description) {
+	this.x = x;
+	this.y = y;
+	this.tag = tag;
+	this.stats = stats;
+	this.desc = description;
+}
+var Monster = function(x,y,name,stats){
+	this.x = x;
+	this.y = y;
+	this.name = name;
+	this.stats = stats;
+	this.speed = 2;
+}
+Monster.prototype.navigate = function(){
+
+	/* input callback informs about map structure */
+	var passableCallback = function(x,y) {
+	    return (Game.map[x+","+y]!="#" && Game.map[x+","+y]!="~"); //&& Game.map[x+","+y]!="K");
+	}
+
+	/* prepare path to given coords */
+	var astar = new ROT.Path.AStar(Game.player._x, Game.player._y, passableCallback, {topology:4});
+
+	/* compute from given coords */
+	var monpath = [];
+    
+    astar.compute(this.x, this.y, function(x, y){
+    	monpath.push([x,y]);
+    });
+	monpath.shift(); /* remove Monster's position */
+	
+	
+    if (monpath.length == 1) {
+       //battle here
+       //console.log(monpath)
+    } 
+
+    else {
+    	if (monpath.length>10) {return;}
+        var newx = monpath[0][0];
+        var newy = monpath[0][1];
+        var newKey = newx+","+newy;
+        if (Game.map[newKey]!='.') { return; }
+       // if (!(newKenewy in Game.map)) { return; }
+        Game.map[this.x+","+this.y]='.';
+        this.x = newx;
+        this.y = newy;
+        Game.map[this.x+","+this.y]='K'
+        //this._draw();
 	}
 }
-var Monster = class Monster{
-	constructor(x,y,name,stats){
-		this.x = x;
-		this.y = y;
-		this.name = name;
-		this.stats = stats;
-	}
-	getSpeed(){
-		return 50;
-	}
-	act(){
-		//Game.engine.lock();
-		//Game.engine.lock()
-		//setTimeout(Game.engine.unlock(), 500);    /* wait for 500ms */
-		//console.log("Monster:"+this.name)
-		Game.map[this.x+","+this.y]='K'
-		if (this.stats[0]<=0) {Game.map[this.x+","+this.y]='.'}
-		Game._drawWholeMap()
-		//Game.engine.unlock();
-	}
+
+Monster.prototype.act = function(){
+	//console.log(Game.scheduler.getTime())
+	Game.scheduler.setDuration(this.speed);
+	this.navigate();
+	if (this.stats[0]<=0) {Game.map[this.x+","+this.y]='.'}
+	Game._drawWholeMap()
 }
+
 
 var Player = function(x, y,color,stats,needs,score,inv) {
     this._x = x;
@@ -328,12 +362,11 @@ var Player = function(x, y,color,stats,needs,score,inv) {
     this.score=0;
     this.inv = inv;
     this.select=0;
-    this._draw();
+    //this._draw();
 }
-Player.prototype.getSpeed = function(){
-	return 100
-}    
+  
 Player.prototype.act = function() {
+	Game.scheduler.setDuration(1)
     Game.engine.lock();
     this.needs[0]+=2
     this.needs[1]+=5
@@ -344,21 +377,21 @@ Player.prototype.act = function() {
 Player.prototype.handleEvent = function(e) {
 
     var keyMap = {};
-    keyMap[87] = 0;
-    keyMap[104] = 1;
-    keyMap[68] = 2;
-    keyMap[98] = 3;
-    keyMap[83] = 4;
-    keyMap[97] = 5;
-    keyMap[65] = 6;
-    keyMap[99] = 7;
-    keyMap[13] = 8;
-    keyMap[32] = 9;
+    keyMap[87] = 0;//w; up
+    keyMap[105] = 1;//top-right
+    keyMap[68] = 2;//d;right
+    keyMap[99] = 3;//bottom-right
+    keyMap[83] = 4;//s;down
+    keyMap[97] = 5;//bottom-left
+    keyMap[65] = 6;//a;left
+    keyMap[103] = 7;//top-left
+    keyMap[100] = 8;//4; dont use
+    keyMap[13] = 9;
     //keyMap[37] = 10;
     keyMap[38] = 10;
    // keyMap[39] = 12;
     keyMap[40] = 11;
-    //keyMap[73] = 10;
+    keyMap[32] = 12;//spacebar
 
     var code = e.keyCode;
     /* one of numpad/wasd directions? */
@@ -416,11 +449,11 @@ Player.prototype.handleEvent = function(e) {
    		//dodge and hit dice
    		if (Game.monsters[curm].stats[3]<=ROT.RNG.getPercentage()) {
    		Game.monsters[curm].stats[0]=(Game.monsters[curm].stats[0])-(this._stats[1])
-   		console.log(Game.monsters[curm].stats[0])
+   		//console.log(Game.monsters[curm].stats[0])
    		}
    		if (this._stats[3]<=ROT.RNG.getPercentage()){
    		this._stats[0]=(this._stats[0])-(Game.monsters[curm].stats[1])
-   		console.log(this._stats[0])
+   		//console.log(this._stats[0])
    		}
    		if (Game.monsters[curm].stats[0]>0) {//not dead yet
    			this._draw();
@@ -429,7 +462,7 @@ Player.prototype.handleEvent = function(e) {
 	    	return;
     	}	
     	if (Game.monsters[curm].stats[0]<=0) {
-    		console.log("workign")
+    		//console.log("workign")
     		Game.scheduler.remove(Game.monsters[curm]);
     		Game.display.draw(this._x, this._y, Game.map[this._x+","+this._y],'#995024');
 		    Game.map[this._x+","+this._y]='.';
@@ -455,7 +488,7 @@ Player.prototype.handleEvent = function(e) {
 }
 
 Player.prototype._draw = function() {
-    Game._drawWholeMap;
+    Game._drawWholeMap();
 }    
 
 Player.prototype._checkAction = function() {

@@ -20,15 +20,14 @@ class Character(db.Model):
 	charname = db.Column(db.String)
 	stats = db.Column(db.PickleType())
 	gear = db.Column(db.PickleType())
-	spawn = db.relationship('Spawn', backref='user',lazy='select')
 	usermap = db.relationship('Map', backref='user',lazy='select')
 
 	def __init__(self, charname, stats,gear):
 		self.username = username
-		self.password = password
 		self.charname = charname
 		self.stats = stats
 		self.gear = gear
+
 class Monster(db.Model):
 	id = db.Column(db.Integer, primary_key = True)
 	name = db.Column(db.String)
@@ -36,7 +35,6 @@ class Monster(db.Model):
 	mtype = db.Column(db.String)
 	stats = db.Column(db.PickleType())
 	gear = db.Column(db.PickleType())
-	spawn = db.relationship('Spawn', backref='monster',lazy='select')
 	mapid = db.Column(db.Integer, db.ForeignKey('map.id'))
 
 	def __init__(self,name, stats,gear):
@@ -49,7 +47,6 @@ class Item(db.Model):
 	name = db.Column(db.String)
 	description = db.Column(db.String)
 	stats = db.Column(db.LargeBinary)
-	spawn = db.relationship('Spawn', backref='item',lazy='select')
 
 
 	def __init__(self,name, stats, description):
@@ -71,7 +68,7 @@ class Item(db.Model):
 		
 class Map(db.Model):
 	id = db.Column(db.Integer, primary_key = True)
-	userid = db.Column(db.Integer, db.ForeignKey('user.id'))
+	userid = db.Column(db.Integer, db.ForeignKey('character.id'))
 	monstermap = db.relationship('Monster', backref='map',lazy='select')
 	terrain = db.Column(db.LargeBinary)
 	movement = db.Column(db.LargeBinary)
@@ -85,6 +82,6 @@ class Map(db.Model):
 if __name__ == "__main__":
 	db.drop_all()
 	db.create_all()
-	User1 = User("A","$2b$12$2FuNpiQtd4ChkJlHhI9GU.K87giuywJ3VGMGPXgZlwS30R3sl2fwC","B",[5,5],[1,2])
+	User1 = User("A","$2b$12$2FuNpiQtd4ChkJlHhI9GU.K87giuywJ3VGMGPXgZlwS30R3sl2fwC")
 	db.session.add(User1)
 	db.session.commit()
