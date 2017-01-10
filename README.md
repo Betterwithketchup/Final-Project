@@ -1,7 +1,7 @@
 # Final	Project
 Radioactive Cavelier
 todo:
-	database reset
+	item use and inventory completion
 
 Genre:
 	survival/rpg
@@ -12,22 +12,18 @@ Features:
 	grid based coordinates
 	scoring system
 	random generation,terrain,buildings?,monsters
-	health,food, and water
+	food, and water
 	saving
 	open world
-	crafting
 	magic?
 
 
 other:
 	dungeons
-	weather?
-	fire?
-	knight/day
+	*knight/day
 
 technologies used:
-	engine?
-	Websockets?
+	ROT.js engine
 	Flask Server
 	Front End: HTML, CSS, JS
 	ASCII

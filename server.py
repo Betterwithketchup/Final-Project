@@ -83,7 +83,6 @@ def main():
 @app.route('/load', methods=['GET','POST'])
 def load():
 	if session.get('logged_in')==True:
-		#print("THISTHING")
 		# thinger=request.form['name']
 		# print(thinger)
 		#print("this is a name: "+str(session.get('user')))
