@@ -83,8 +83,8 @@ handleEvent = function(e) {
 		$("#submitter").hide()
 		document.body.removeChild(display.getContainer());
 		var $charname = $("#charname").val();
-		var $stats = [0,$("#strength").val(),$("#constitution").val(),$("#dexterity").val()];
-		$overplayer = new Player(0,0,"#FF0000",$stats,[10,10],0,[[new Item(0,0,"weapon",[1,1],"Fists")],[]],[])
+		var $stats = [0,$("#strength").val(),$("#constitution").val(),$("#dexterity").val(),[10,10]];
+		$overplayer = new Player(0,0,"#FF0000",$stats,[[new Item(0,0,"weapon",[1,1],"Fists")],[]],[])
 		//console.log($stats)
 		/*$.ajax({
 		method: "POST",
@@ -266,8 +266,8 @@ var Game = {
 		Game.display.drawText(31,10, '%b{black}|Weapons:');
 		Game.display.drawText(31,14, '%b{black}|Consumables:');
 		
-		if (this.player.needs[0]>50) {Game.display.drawText(31,7, '%b{black}|Hungry');}
-		if (this.player.needs[1]>50) {Game.display.drawText(31,8, '%b{black}|Thirsty');}
+		if (this.player._stats[4][0]>50) {Game.display.drawText(31,7, '%b{black}|Hungry'+this.player._stats[4][0]);}
+		if (this.player._stats[4][1]>50) {Game.display.drawText(31,8, '%b{black}|Thirsty'+this.player._stats[4][1]);}
 
 
 		for (var i = 0; i <= this.player.inv[0].length; i++) {
@@ -299,8 +299,9 @@ var Monster = function(x,y,name,stats){
 	this.stats = stats;
 	this.speed = 7;
 }
-Monster.prototype.navigate = function(){
-
+Monster.prototype.navigate = function(){//monster pathfinding
+	if ((Math.sqrt( (this.x-Game.player._x)*(this.x-Game.player._x) + (this.y-Game.player._y)*(this.y-Game.player._y)))>10) {return;}
+	//some way to get distance before generating?
 	/* input callback informs about map structure */
 	var passableCallback = function(x,y) {
 		return (Game.map[x+","+y]!="#" && Game.map[x+","+y]!="~"); //&& Game.map[x+","+y]!="K");
@@ -317,19 +318,21 @@ Monster.prototype.navigate = function(){
 	});
 	monpath.shift(); /* remove Monster's position */
 	
-	
 	if (monpath.length == 1) {
-	   //battle here
-	   //console.log(monpath)
+		for (var i = Game.monsters.length - 1; i >= 0; i--) {//which monster is it?
+			if (Game.monsters[i]===this){
+				curm = i
+			}
+		}
+		Game.player._combat(curm)
 	} 
 
 	else {
-		if (monpath.length>10) {return;}
 		var newx = monpath[0][0];
 		var newy = monpath[0][1];
 		var newKey = newx+","+newy;
 		if (Game.map[newKey]!='.') { return; }
-	    if (!(newKenewy in Game.map)) { return; }
+	    if (!(newKey in Game.map)) { return; }
 		Game.map[this.x+","+this.y]='.';
 		this.x = newx;
 		this.y = newy;
@@ -340,19 +343,19 @@ Monster.prototype.navigate = function(){
 Monster.prototype.act = function(){
 	//console.log(Game.scheduler.getTime())
 	Game.scheduler.setDuration(this.speed);
+	if (this.stats[0]<=0) {Game.map[this.x+","+this.y]='.';Game.scheduler.remove(Game.monsters[curm]);}
 	this.navigate();
-	if (this.stats[0]<=0) {Game.map[this.x+","+this.y]='.'}
 	Game._drawWholeMap()
 }
 
 
-var Player = function(x, y,color,stats,needs,score,inv) {
+var Player = function(x, y,color,stats,inv) {
 	this._x = x;
 	this._y = y;
 	this.color=color;
 	this._stats=stats;
-	this.needs=needs;
-	this.score=0;
+	//this.stats[3]=stats[3];
+	//this.score=0;
 	this.inv = inv;
 	this.select=0;
 	this.speed = 10;
@@ -361,8 +364,8 @@ var Player = function(x, y,color,stats,needs,score,inv) {
 Player.prototype.act = function() {
 	Game.scheduler.setDuration(this.speed)
 	Game.engine.lock();
-	this.needs[0]+=2
-	this.needs[1]+=5
+	this._stats[4][0]+=2
+	this._stats[4][1]+=2
 	Game._drawWholeMap()
 	window.addEventListener("keydown", this);
 }
@@ -379,7 +382,7 @@ Player.prototype.handleEvent = function(e) {
 	keyMap[65] = 6;//a;left
 	keyMap[103] = 7;//top-left
 	keyMap[69] = 8;//e; use key
-	keyMap[13] = 9;//enter
+	keyMap[101] = 9;//5: wait
 	keyMap[38] = 10;//up arrow
 	keyMap[40] = 11;//down arrow
 	keyMap[32] = 12;//spacebar
@@ -387,9 +390,15 @@ Player.prototype.handleEvent = function(e) {
 	var code = e.keyCode;
 	/* one of numpad/wasd directions? */
 	if (!(code in keyMap)) { return; }
-	//action for enter and spacebar
+	//action for wait and spacebar
 	if (code == 32) {
 		this._checkAction();
+		return;
+	}
+	if (code == 101) {
+		this._draw();
+		window.removeEventListener("keydown", this);
+		Game.engine.unlock();
 		return;
 	}
 	if (code == 69) {
@@ -400,13 +409,13 @@ Player.prototype.handleEvent = function(e) {
 	if (code == 38) {
 		if (this.select>0) {
 		this.select-=1;}
-		console.log(this.select)
+		this._draw();
 		return;
 	}
 	if (code == 40) {
 		if (this.select<invlength-1) {
 		this.select+=1;}
-		console.log(this.select)
+		this._draw();
 		return;
 	}
 	/* is there a free space? */
@@ -443,14 +452,7 @@ Player.prototype.handleEvent = function(e) {
 			}
 		}
 		//dodge and hit dice
-		if (Game.monsters[curm].stats[3]<=ROT.RNG.getPercentage()) {
-		Game.monsters[curm].stats[0]=(Game.monsters[curm].stats[0])-(this._stats[1])
-		//console.log(Game.monsters[curm].stats[0])
-		}
-		if (this._stats[3]<=ROT.RNG.getPercentage()){
-		this._stats[0]=(this._stats[0])-(Game.monsters[curm].stats[1])
-		//console.log(this._stats[0])
-		}
+		this._combat(curm)
 		if (Game.monsters[curm].stats[0]>0) {//not dead yet
 			this._draw();
 			window.removeEventListener("keydown", this);
@@ -479,7 +481,6 @@ Player.prototype.handleEvent = function(e) {
 	Game.map[this._x+","+this._y]='@'
 	this._draw();
 	window.removeEventListener("keydown", this);
-	
 	Game.engine.unlock();
 }
 
@@ -487,13 +488,47 @@ Player.prototype._draw = function() {
 	Game._drawWholeMap();
 }    
 
+Player.prototype._combat = function(curm) {
+	if (Game.monsters[curm].stats[3]<=ROT.RNG.getPercentage()) {
+	Game.monsters[curm].stats[0]=(Game.monsters[curm].stats[0])-(this._stats[1])
+	}
+	if (this._stats[3]<=ROT.RNG.getPercentage()){
+	this._stats[0]=(this._stats[0])-(Game.monsters[curm].stats[1])
+	}
+} 
+
 Player.prototype._checkAction = function() {
 	this.color=("rgb("+ROT.Color.randomize([100, 128, 230], [30, 10, 20])+")")
-	if (this.inv[this.select]==null) {return;}
-	number = this.inv[1].stats[1]
-	statto = this.inv[1].stats[0]
-	this._stats[statto]+= number
-	this.inv.splice(1,2)
+	var sel = this.select;
+//	if (this.inv[this.select]==null) {return;}
+
+	
+	if (sel<=this.inv[0].length-1){
+		number = this.inv[0][sel].stats[1]
+		statto = this.inv[0][sel].stats[0]
+		this._stats[statto]+ number
+		//this.inv[0].splice(sel)
+	}
+	if((this.inv[1][sel-this.inv[0].length].stats[0])===4){
+		number = this.inv[1][sel-this.inv[0].length].stats[1]
+		statto = this.inv[1][sel-this.inv[0].length].stats[0]
+		//console.log(this._stats[statto[1]],number[1])
+		this._stats[statto][0]+=number[0]
+		this._stats[statto][1]+=number[1]
+		this.inv[1].splice(sel-this.inv[0].length,1)
+		if (this.select>this.inv[1].length) {
+		this.select-=1;
+		}
+	}
+	else{
+		number = this.inv[1][sel-this.inv[0].length].stats[1]
+		statto = this.inv[1][sel-this.inv[0].length].stats[0]
+		this._stats[statto]+=number
+		this.inv[1].splice(sel-this.inv[0].length,1)
+		if (this.select>this.inv[1].length) {
+			this.select-=1;
+		}
+	}
 }
 Player.prototype._use = function(event){
 //this seems overly complicated for picking up water, but whatevs
@@ -514,9 +549,9 @@ Player.prototype._use = function(event){
 	if (!(newKey in Game.map)) { return; }
 	if (Game.map[newKey]=='~') {
 		window.removeEventListener("keydown", Game.player._use);
-		Game.player.inv[1].push(new Item(0,0,"consumable",[1,1],"Water"))
+		Game.player.inv[1].push(new Item(0,0,"consumable",[4,[0,-10]],"Water"))
 		Game.player._draw();
-		console.log("checker")
+		//console.log("checker")
 		Game.engine.unlock();
 		return;
 	};
