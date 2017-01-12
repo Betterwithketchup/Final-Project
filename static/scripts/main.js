@@ -1,4 +1,5 @@
 var $overplayer = null;
+var log = "Start"
 $(document).ready(function(){
 	console.log("Ping!");
 
@@ -83,8 +84,8 @@ handleEvent = function(e) {
 		$("#submitter").hide()
 		document.body.removeChild(display.getContainer());
 		var $charname = $("#charname").val();
-		var $stats = [0,$("#strength").val(),$("#constitution").val(),$("#dexterity").val(),[10,10]];
-		$overplayer = new Player(0,0,"#FF0000",$stats,[[new Item(0,0,"weapon",[1,1],"Fists")],[]],[])
+		var $stats = [20,parseInt($("#strength").val()),parseInt($("#constitution").val()),parseInt($("#dexterity").val()),[10,10]];
+		$overplayer = new Player(0,0,"#FF0000",$stats,[[new Item(0,0,"weapon",[true,1,3],"Fists")],[]],[])
 		//console.log($stats)
 		/*$.ajax({
 		method: "POST",
@@ -202,11 +203,20 @@ var Game = {
 			var x = parseInt(parts[0]);
 			var y = parseInt(parts[1]);
 			this.items.push(new Item(x,y,"consumable",[0,10],"Health Potion"))
-		   
 		}
+		for (var i=0;i<10;i++) {
+			var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+			var key = freeCells.splice(index, 1)[0];
+			this.map[key] = "+";
+			var parts = key.split(",");
+			var x = parseInt(parts[0]);
+			var y = parseInt(parts[1]);
+			this.items.push(new Item(x,y,"weapon",[false,1,3],"Sword"))
+		}
+
 	},
 	_generateMonsters: function(freeCells) {
-		for (var i=0;i<5;i++) {
+		for (var i=0;i<7;i++) {
 			var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
 			var key = freeCells.splice(index, 1)[0];
 			var parts = key.split(",");
@@ -215,7 +225,7 @@ var Game = {
 			//this.display.draw(x, y, 'K', '#FF0000');
 			//this.monsters.push(new Monster(x,y,0,[10,2,0,5]))
 			this.map[key] = "K";
-			this.monsters.push(new Monster(x,y,i,[10,7,0,5]))
+			this.monsters.push(new Monster(x,y,i,[20,4,2,2],[new Item(x,y,"weapon",[true,1,3],"Sword")]))
 		}
 	},
 	//display:65,26
@@ -228,6 +238,9 @@ var Game = {
 				
 				if (Game.map[(px+i)+","+(py+j)]=="#") {
 					Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#21CC04');
+				}
+				if (Game.map[(px+i)+","+(py+j)]=="+") {
+					Game.display.draw(i, j, '+', this.player.color,'#000000');
 				}
 			   if (Game.map[(px+i)+","+(py+j)]==".") {
 					Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#995024');
@@ -257,9 +270,11 @@ var Game = {
 			Game.display.drawText(i,j,"%b{black}%c{black}-")
 		}
 	}
+		Game.display.drawText(45, 1, log, 16);
+
 		Game.display.drawText(31,1, '%b{black}|X:'+this.player._x+', Y:'+this.player._y+'');
 	
-		Game.display.drawText(31,3, '%b{black}|Score: '+this.player._stats[0]+'');
+		Game.display.drawText(31,3, '%b{black}|HP: '+this.player._stats[0]+'');
 		Game.display.drawText(31,4, '%b{black}|STR: '+this.player._stats[1]+'');
 		Game.display.drawText(31,5, '%b{black}|CON: '+this.player._stats[2]+'');
 		Game.display.drawText(31,6, '%b{black}|DEX: '+this.player._stats[3]+'');
@@ -271,8 +286,10 @@ var Game = {
 
 
 		for (var i = 0; i <= this.player.inv[0].length; i++) {
+			var dingle = '%b{black}|';
 			if (this.player.inv[0][i]!=null) {
-				Game.display.drawText(31,11+i, '%b{black}|'+this.player.inv[0][i].desc+'');					
+				if (this.player.inv[0][i].stats[0]==true) {dingle='%b{orange}|'}
+				Game.display.drawText(31,11+i, dingle+this.player.inv[0][i].desc+'');					
 			}
 		}
 		for (var i = 0; i <= this.player.inv[1].length; i++) {
@@ -292,12 +309,13 @@ var Item = function(x,y,tag,stats,description) {
 	this.stats = stats;
 	this.desc = description;
 }
-var Monster = function(x,y,name,stats){
+var Monster = function(x,y,name,stats,inv){
 	this.x = x;
 	this.y = y;
 	this.name = name;
 	this.stats = stats;
-	this.speed = 7;
+	this.inv = inv
+	this.speed = 10;
 }
 Monster.prototype.navigate = function(){//monster pathfinding
 	if ((Math.sqrt( (this.x-Game.player._x)*(this.x-Game.player._x) + (this.y-Game.player._y)*(this.y-Game.player._y)))>10) {return;}
@@ -324,7 +342,7 @@ Monster.prototype.navigate = function(){//monster pathfinding
 				curm = i
 			}
 		}
-		Game.player._combat(curm)
+		this._combat(curm)
 	} 
 
 	else {
@@ -339,7 +357,12 @@ Monster.prototype.navigate = function(){//monster pathfinding
 		Game.map[this.x+","+this.y]='K'
 	}
 }
-
+Monster.prototype._combat = function(curm) {
+	var theitem = this.inv.find(function(item){return item.stats[0]==true;})
+	if ((Math.floor(Math.random()*20))+(this.stats[3])>=(Math.floor(Math.random()*20))+(Game.player._stats[3])) {
+	Game.player._stats[0]=(Game.player._stats[0])-(this.stats[1]+diceRoll(theitem.stats[1],theitem.stats[2]))
+	}
+} 
 Monster.prototype.act = function(){
 	//console.log(Game.scheduler.getTime())
 	Game.scheduler.setDuration(this.speed);
@@ -425,7 +448,7 @@ Player.prototype.handleEvent = function(e) {
 	var newKey = newX + "," + newY;
 	if (!(newKey in Game.map)) { return; }
 
-	if (Game.map[newKey]==='*') {//pickup function
+	if (Game.map[newKey]==='*' || Game.map[newKey]==='+') {//pickup function
 		for (var i = Game.items.length - 1; i >= 0; i--) {
 			if (Game.items[i].x+","+Game.items[i].y===newKey){
 				curi = i
@@ -488,30 +511,39 @@ Player.prototype._draw = function() {
 	Game._drawWholeMap();
 }    
 
+function diceRoll(times,sides) {
+	var result = 1;
+	for (var i = times; i > 0; i--) {
+		result+=(Math.floor(Math.random()*sides));
+		console.log("result "+result)
+	}
+	
+	return result;
+}
+//hp,strength,con,dex
 Player.prototype._combat = function(curm) {
-	if (Game.monsters[curm].stats[3]<=ROT.RNG.getPercentage()) {
-	Game.monsters[curm].stats[0]=(Game.monsters[curm].stats[0])-(this._stats[1])
+	var theitem = this.inv[0].find(function(item){return item.stats[0]==true;})
+	if ((Math.floor(Math.random()*20))+(this._stats[3])>=(Math.floor(Math.random()*20))+(Game.monsters[curm].stats[3])) {
+	Game.monsters[curm].stats[0]=(Game.monsters[curm].stats[0])-(this._stats[1]+diceRoll(theitem.stats[1],theitem.stats[2]))
 	}
-	if (this._stats[3]<=ROT.RNG.getPercentage()){
-	this._stats[0]=(this._stats[0])-(Game.monsters[curm].stats[1])
-	}
+	console.log(Game.monsters[curm].stats[0],this._stats[0])
 } 
 
 Player.prototype._checkAction = function() {
-	this.color=("rgb("+ROT.Color.randomize([100, 128, 230], [30, 10, 20])+")")
+	//this.color=("rgb("+ROT.Color.randomize([100, 128, 230], [30, 10, 20])+")")
 	var sel = this.select;
-//	if (this.inv[this.select]==null) {return;}
-
-	
+	if (this.inv[1][0]!=null) {
+	var number = this.inv[1][sel-this.inv[0].length].stats[1]
+	var statto = this.inv[1][sel-this.inv[0].length].stats[0]
+	}
 	if (sel<=this.inv[0].length-1){
-		number = this.inv[0][sel].stats[1]
-		statto = this.inv[0][sel].stats[0]
-		this._stats[statto]+ number
-		//this.inv[0].splice(sel)
+		for (var i = this.inv[0].length - 1; i >= 0; i--) {
+			this.inv[0][i].stats[0]=false;
+		}
+		this.inv[0][sel].stats[0]=true;
 	}
 	if((this.inv[1][sel-this.inv[0].length].stats[0])===4){
-		number = this.inv[1][sel-this.inv[0].length].stats[1]
-		statto = this.inv[1][sel-this.inv[0].length].stats[0]
+		
 		//console.log(this._stats[statto[1]],number[1])
 		this._stats[statto][0]+=number[0]
 		this._stats[statto][1]+=number[1]
@@ -521,14 +553,15 @@ Player.prototype._checkAction = function() {
 		}
 	}
 	else{
-		number = this.inv[1][sel-this.inv[0].length].stats[1]
-		statto = this.inv[1][sel-this.inv[0].length].stats[0]
+		//number = this.inv[1][sel-this.inv[0].length].stats[1]
+		//statto = this.inv[1][sel-this.inv[0].length].stats[0]
 		this._stats[statto]+=number
 		this.inv[1].splice(sel-this.inv[0].length,1)
 		if (this.select>this.inv[1].length) {
 			this.select-=1;
 		}
 	}
+	this._draw();
 }
 Player.prototype._use = function(event){
 //this seems overly complicated for picking up water, but whatevs
