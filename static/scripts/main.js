@@ -1,5 +1,6 @@
 var $overplayer = null;
 var log = "Start"
+var logger = 0;
 $(document).ready(function(){
 	console.log("Ping!");
 
@@ -110,12 +111,14 @@ handleEvent = function(e) {
 //the actual game
 var Game = {
 	display: null,
+	indisplay: null,
+	mapdisplay: null,
 	map: {},
 	engine: null,
 	player: null,
 	monsters: [],
 	items: [],
-	screenWidth: 65,
+	screenWidth: 45,
 	screenHeight: 30,
 	scheduler: new ROT.Scheduler.Action(),
 	init: function() {
@@ -123,8 +126,14 @@ var Game = {
 		this.display = new ROT.Display();//setting up the screen
 		this.display.setOptions({width:this.screenWidth,height:this.screenHeight,forceSquareRatio:true})
 		//this.display.setOptions({width:50,height:30})
+		this.indisplay = new ROT.Display();//setting up the screen
+		this.indisplay.setOptions({width:45,height:3,bg:"#FF0000"})
+		this.mapdisplay = new ROT.Display();//setting up the screen
+		this.mapdisplay.setOptions({width:50,height:50,bg:"#a00",spacing:0.7,fontSize:7,forceSquareRatio:true})
 		document.body.appendChild(this.display.getContainer());
-
+		
+		document.body.appendChild(this.mapdisplay.getContainer());
+		document.body.appendChild(this.indisplay.getContainer());
 		this._generateMap();
 		
 		this.scheduler.add(this.player, true,1);
@@ -137,15 +146,15 @@ var Game = {
 	},
 
 	_generateMap: function() {
-		var digger = new ROT.Map.Cellular(100,60,{
+		var forest = new ROT.Map.Cellular(100,60,{
 		//born: [4, 5, 6, 7, 8],
 		//survive: [2, 3, 4, 5],
 		connected: true
 		});
 		freeCells =[]
-		digger.randomize(0.47)
+		forest.randomize(0.47)
 
-		var digCallback = function(x, y, value) {
+		var forCallback = function(x, y, value) {
 			var key = x+","+y;
 			if (value) { 
 			this.map[key] = "#";
@@ -155,8 +164,8 @@ var Game = {
 			freeCells.push(key);
 		}
 		for (var i=49; i>=0; i--) {
-		digger.create(digCallback.bind(this));
-		digger.connect(this.display.DEBUG,0)
+		forest.create(forCallback.bind(this));
+		forest.connect(this.display.DEBUG,0)
 		}
 		var waterer = new ROT.Map.Cellular(this.screenWidth,this.screenHeight,{
 			born: [4, 5, 6, 7, 8],
@@ -169,7 +178,8 @@ var Game = {
 			return; 
 			}            
 			//this.map[key] = null;
-		  // freeCells.push(key);
+		  	if (this.map[key]!="#") {freeCells.push(key);}
+		  	
 		}
 		for (var i=40; i>=0; i--) {
 			waterer.create(watCallback.bind(this));
@@ -180,7 +190,39 @@ var Game = {
 		this._generateMonsters(freeCells);
 		this._drawWholeMap();   
 	},
-	
+
+	_generateNextMap: function() {
+		Game.map = {};
+
+	    var digger = new ROT.Map.Digger(100,60,{roomWidth:[5,10], roomHeight:[5,10], corridorLength:[3,10], dugPercentage:0.3});
+	 	var freeCells = [];
+	    var digCallback = function(x, y, value) {
+        	var key = x+","+y;
+			if (value) {
+			this.map[key] = "#";
+			return; 
+			}            
+			this.map[key] = ".";
+			freeCells.push(key);
+    	}
+   		digger.create(digCallback.bind(this));
+
+		$overplayer=null
+		this._createPlayer(freeCells);//spawn things
+		this.items = [];
+		this._generateBoxes(freeCells);
+		this.monsters = [];
+		this._generateMonsters(freeCells);
+		this._drawWholeMap();
+		this.scheduler = new ROT.Scheduler.Action()
+		this.scheduler.add(this.player, true,1);
+		for (var i = this.monsters.length - 1; i >= 0; i--) {
+			this.scheduler.add(this.monsters[i], true,1);
+	   }
+		
+		this.engine = new ROT.Engine(this.scheduler);
+		this.engine.start();
+	},
 	_createPlayer: function(freeCells) {
 		if ($overplayer!=null) {this.player= $overplayer;}
 		var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
@@ -211,9 +253,11 @@ var Game = {
 			var parts = key.split(",");
 			var x = parseInt(parts[0]);
 			var y = parseInt(parts[1]);
-			this.items.push(new Item(x,y,"weapon",[false,1,3],"Sword"))
+			this.items.push(new Item(x,y,"weapon",[false,1,5],"Sword"))
 		}
-
+		var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+		var key = freeCells.splice(index, 1)[0];
+		this.map[key] = ">";
 	},
 	_generateMonsters: function(freeCells) {
 		for (var i=0;i<7;i++) {
@@ -225,12 +269,19 @@ var Game = {
 			//this.display.draw(x, y, 'K', '#FF0000');
 			//this.monsters.push(new Monster(x,y,0,[10,2,0,5]))
 			this.map[key] = "K";
-			this.monsters.push(new Monster(x,y,i,[20,4,2,2],[new Item(x,y,"weapon",[true,1,3],"Sword")]))
+			this.monsters.push(new Monster(x,y,i,[20,4,2,5],[new Item(x,y,"weapon",[true,1,3],"Sword")]))
 		}
 	},
 	//display:65,26
 	//tells the map how to display
 	_drawWholeMap: function() {
+		var ppx = this.player._x-25
+		var ppy = this.player._y-25
+		for (var i = 0 - 1; i <= 50; i++) {
+			for (var j = 0 - 1; j <= 50; j++) {
+	        this.mapdisplay.draw(i, j, this.map[(ppx+i)+","+(ppy+j)]);
+			}
+		}
 		var px = this.player._x-15
 		var py = this.player._y-15
 		for (var i = 0 - 1; i <= 30; i++) {
@@ -238,6 +289,9 @@ var Game = {
 				
 				if (Game.map[(px+i)+","+(py+j)]=="#") {
 					Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#21CC04');
+				}
+				if (Game.map[(px+i)+","+(py+j)]==">") {
+					Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#9D00FF');
 				}
 				if (Game.map[(px+i)+","+(py+j)]=="+") {
 					Game.display.draw(i, j, '+', this.player.color,'#000000');
@@ -270,7 +324,7 @@ var Game = {
 			Game.display.drawText(i,j,"%b{black}%c{black}-")
 		}
 	}
-		Game.display.drawText(45, 1, log, 16);
+		Game.indisplay.drawText(0, logger, log, 40);
 
 		Game.display.drawText(31,1, '%b{black}|X:'+this.player._x+', Y:'+this.player._y+'');
 	
@@ -298,7 +352,7 @@ var Game = {
 				}	
 		}
 		var sel = this.player.select;
-		if (sel<=this.player.inv[0].length-1) {Game.display.drawText(31,11+sel, '%b{blue}|'+this.player.inv[0][sel].desc+'');}
+		if (sel<this.player.inv[0].length) {Game.display.drawText(31,11+sel, '%b{blue}|'+this.player.inv[0][sel].desc+'');}
 		else{Game.display.drawText(31,15+sel-this.player.inv[0].length, '%b{blue}|'+this.player.inv[1][sel-this.player.inv[0].length].desc+'');}
 	}
 }
@@ -361,6 +415,8 @@ Monster.prototype._combat = function(curm) {
 	var theitem = this.inv.find(function(item){return item.stats[0]==true;})
 	if ((Math.floor(Math.random()*20))+(this.stats[3])>=(Math.floor(Math.random()*20))+(Game.player._stats[3])) {
 	Game.player._stats[0]=(Game.player._stats[0])-(this.stats[1]+diceRoll(theitem.stats[1],theitem.stats[2]))
+	logger-=1;
+	log+="\nThe monster hits you!"
 	}
 } 
 Monster.prototype.act = function(){
@@ -369,6 +425,13 @@ Monster.prototype.act = function(){
 	if (this.stats[0]<=0) {Game.map[this.x+","+this.y]='.';Game.scheduler.remove(Game.monsters[curm]);}
 	this.navigate();
 	Game._drawWholeMap()
+	if (Game.player._stats[0]<=0) {
+		Game.engine.lock();
+		document.body.removeChild(Game.indisplay.getContainer());
+		document.body.removeChild(Game.mapdisplay.getContainer());
+		Game.display.clear()
+		Game.display.draw(1,1,"You lose!")
+	}
 }
 
 
@@ -409,11 +472,17 @@ Player.prototype.handleEvent = function(e) {
 	keyMap[38] = 10;//up arrow
 	keyMap[40] = 11;//down arrow
 	keyMap[32] = 12;//spacebar
+	keyMap[190] = 13;//>and. key
 
 	var code = e.keyCode;
 	/* one of numpad/wasd directions? */
 	if (!(code in keyMap)) { return; }
 	//action for wait and spacebar
+	if (code == 190) {
+		Game._generateNextMap();
+		return;
+	}
+
 	if (code == 32) {
 		this._checkAction();
 		return;
@@ -428,16 +497,20 @@ Player.prototype.handleEvent = function(e) {
 		window.addEventListener("keydown", this._use);
 		return;
 	}
-	var invlength = this.inv[0].length+this.inv[1].length;
+	var invlength = (this.inv[0].length+this.inv[1].length)-1;
+	if (this.inv[1].length!=0) {invlength = (this.inv[0].length+this.inv[1].length)-2;}
+	//console.log("invlength "+invlength)
 	if (code == 38) {
 		if (this.select>0) {
 		this.select-=1;}
+		//console.log(this.select)
 		this._draw();
 		return;
 	}
 	if (code == 40) {
-		if (this.select<invlength-1) {
+		if (this.select<=invlength) {
 		this.select+=1;}
+		//console.log(this.select)
 		this._draw();
 		return;
 	}
@@ -447,6 +520,13 @@ Player.prototype.handleEvent = function(e) {
 	var newY = this._y + dir[1];
 	var newKey = newX + "," + newY;
 	if (!(newKey in Game.map)) { return; }
+
+	if (Game.map[newKey]==='>'){
+		Game._generateNextMap();
+		window.removeEventListener("keydown", this);
+		Game.engine.unlock();
+		return;
+	}
 
 	if (Game.map[newKey]==='*' || Game.map[newKey]==='+') {//pickup function
 		for (var i = Game.items.length - 1; i >= 0; i--) {
@@ -515,7 +595,7 @@ function diceRoll(times,sides) {
 	var result = 1;
 	for (var i = times; i > 0; i--) {
 		result+=(Math.floor(Math.random()*sides));
-		console.log("result "+result)
+		//console.log("result "+result)
 	}
 	
 	return result;
@@ -525,43 +605,59 @@ Player.prototype._combat = function(curm) {
 	var theitem = this.inv[0].find(function(item){return item.stats[0]==true;})
 	if ((Math.floor(Math.random()*20))+(this._stats[3])>=(Math.floor(Math.random()*20))+(Game.monsters[curm].stats[3])) {
 	Game.monsters[curm].stats[0]=(Game.monsters[curm].stats[0])-(this._stats[1]+diceRoll(theitem.stats[1],theitem.stats[2]))
+	logger-=1;
+	log+=("\nYou hit the monster!")
 	}
-	console.log(Game.monsters[curm].stats[0],this._stats[0])
+	//console.log(Game.monsters[curm].stats[0],this._stats[0])
 } 
 
 Player.prototype._checkAction = function() {
 	//this.color=("rgb("+ROT.Color.randomize([100, 128, 230], [30, 10, 20])+")")
 	var sel = this.select;
-	if (this.inv[1][0]!=null) {
-	var number = this.inv[1][sel-this.inv[0].length].stats[1]
-	var statto = this.inv[1][sel-this.inv[0].length].stats[0]
+	if (this.select>=this.inv[0].length) {sel = this.select-this.inv[0].length}
+	if (this.inv[1][0]!=null && (sel)>-1) {
+	//console.log("sel+inv "+(sel))
+	var number = this.inv[1][sel].stats[1]
+	var statto = this.inv[1][sel].stats[0]
 	}
-	if (sel<=this.inv[0].length-1){
+	if (this.select<=this.inv[0].length-1){
 		for (var i = this.inv[0].length - 1; i >= 0; i--) {
 			this.inv[0][i].stats[0]=false;
 		}
 		this.inv[0][sel].stats[0]=true;
+		logger-=1;
+		log+=("\nYou equip your "+this.inv[0][sel].desc)
+		this._draw();
+		return;
 	}
-	if((this.inv[1][sel-this.inv[0].length].stats[0])===4){
+	else if((this.inv[1][sel].stats[0])===4){
 		
 		//console.log(this._stats[statto[1]],number[1])
 		this._stats[statto][0]+=number[0]
 		this._stats[statto][1]+=number[1]
-		this.inv[1].splice(sel-this.inv[0].length,1)
+
+		logger-=1;
+		log+=("\nYou consume your "+this.inv[1][sel].desc)
+		this.inv[1].splice(sel,1)
 		if (this.select>this.inv[1].length) {
 		this.select-=1;
 		}
+		this._draw();
+		return;
 	}
 	else{
-		//number = this.inv[1][sel-this.inv[0].length].stats[1]
-		//statto = this.inv[1][sel-this.inv[0].length].stats[0]
+		//number = this.inv[1][sel].stats[1]
+		//statto = this.inv[1][sel].stats[0]
+		logger-=1;
+		log+=("\nYou consume your "+this.inv[1][sel].desc);
+		this.inv[1].splice(sel,1)
 		this._stats[statto]+=number
-		this.inv[1].splice(sel-this.inv[0].length,1)
 		if (this.select>this.inv[1].length) {
 			this.select-=1;
 		}
+		this._draw();
+		return;
 	}
-	this._draw();
 }
 Player.prototype._use = function(event){
 //this seems overly complicated for picking up water, but whatevs
