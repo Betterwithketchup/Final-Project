@@ -1,26 +1,10 @@
 var $overplayer = null;
+var $data = [null];
+
 var log = "Start"
-var logger = 0;
+var logger = 2;
 $(document).ready(function(){
 	console.log("Ping!");
-
-	$('#load').on('click', function(){
-		$.ajax({
-			method:"POST",
-			url: "http://localhost:3000/load",
-			xhrFields: { withCredentials:true },
-			success: function (response) {
-		$('#load').attr('class',response)
-		//console.log("done!"+ something.getAllResponseHeaders());
-		console.log(response)
-		x=response[2][0]
-		y=response[2][0]
-		Game.player = null
-		Game.player= new Player(x,y, '#FF0000')
-	}
-		});
-
-	})
 	/*$('#logout').on('click', function(event){
 		$.ajax({
 		method: "POST",
@@ -80,30 +64,52 @@ handleEvent = function(e) {
 		$("#nextbutton").hide()
 	})
 	$('#submitter').on('click',function(event){
+		if (parseInt($("#strength").val())+parseInt($("#constitution").val())+parseInt($("#dexterity").val())>15) {return;}
 		event.preventDefault();
 		$("li").hide()
 		$("#submitter").hide()
 		document.body.removeChild(display.getContainer());
 		var $charname = $("#charname").val();
 		var $stats = [20,parseInt($("#strength").val()),parseInt($("#constitution").val()),parseInt($("#dexterity").val()),[10,10]];
-		$overplayer = new Player(0,0,"#FF0000",$stats,[[new Item(0,0,"weapon",[true,1,3],"Fists")],[]],[])
+		$overplayer = new Player($charname,0,0,"#FF0000",$stats,[[new Item(0,0,"weapon",[true,1,3],"Fists")],[]])
 		//console.log($stats)
-		/*$.ajax({
+		$.ajax({
 		method: "POST",
-		url: "http://127.0.0.1:3000/data",
+		url: "http://127.0.0.1:3000/newchar",
 		data: {'charname':$charname,'stats':$stats},
 		//dataType: 'json',
 		success:function(response){
 			//console.log(response)
 			}
-		})*/
+		})
 		
 		Game.init();
 	})
 
 	}
 	if (key == 78) {
-		throw new Error("wey");
+		$.ajax({
+			method:"GET",
+			url: "http://localhost:3000/load",
+			xhrFields: { withCredentials:true },
+			success: function (response) {
+			$('#load').attr('class',response)
+			//console.log("done!"+ something.getAllResponseHeaders());
+			console.log(response)
+			Game.player = null
+			$overplayer = new Player(response[0],response[1][0],response[1][1],"#FF0000",response[2],response[3])
+			$data = [response[4],response[5],response[6]]
+			document.body.removeChild(display.getContainer());
+			Game.init();
+			},
+			error: function(response){
+				console.log(response.status)
+				display.clear()
+				display.drawText(2,2, "Something borked itself")
+				return;
+			}
+		});
+		
 	}
 }
 
@@ -146,6 +152,12 @@ var Game = {
 	},
 
 	_generateMap: function() {
+		if ($data[0]!=null) {
+			Game.map = $data[0];
+			Game.monsters = $data[1];
+			Game.items = $data[2]
+			return;
+		}
 		var forest = new ROT.Map.Cellular(100,60,{
 		//born: [4, 5, 6, 7, 8],
 		//survive: [2, 3, 4, 5],
@@ -269,7 +281,7 @@ var Game = {
 			//this.display.draw(x, y, 'K', '#FF0000');
 			//this.monsters.push(new Monster(x,y,0,[10,2,0,5]))
 			this.map[key] = "K";
-			this.monsters.push(new Monster(x,y,i,[20,4,2,5],[new Item(x,y,"weapon",[true,1,3],"Sword")]))
+			this.monsters.push(new Monster(x,y,i,[20,2,2,5],[new Item(x,y,"weapon",[true,1,2],"Sword")]))
 		}
 	},
 	//display:65,26
@@ -311,6 +323,9 @@ var Game = {
 				if (Game.map[(px+i)+","+(py+j)]=="@") {
 					Game.display.draw(i, j, '@', this.player.color,'#000000');
 				}
+				if (Game.map[(px+i)+","+(py+j)]=="c") {
+					Game.display.draw(i, j, 'c', this.player.color);
+				}
 				else if (Game.map[(px+i)+","+(py+j)]==null) {
 					Game.display.draw(i, j, ' ', '#5C1C99');
 				}        		
@@ -325,6 +340,7 @@ var Game = {
 		}
 	}
 		Game.indisplay.drawText(0, logger, log, 40);
+		Game.indisplay.drawText(0,0,Game.player.name)
 
 		Game.display.drawText(31,1, '%b{black}|X:'+this.player._x+', Y:'+this.player._y+'');
 	
@@ -430,12 +446,20 @@ Monster.prototype.act = function(){
 		document.body.removeChild(Game.indisplay.getContainer());
 		document.body.removeChild(Game.mapdisplay.getContainer());
 		Game.display.clear()
-		Game.display.draw(1,1,"You lose!")
+		Game.display.draw(1,1,"You lose! \nRestart? y/n")
+		window.addEventListener("keydown", this);
+	}
+}
+Monster.prototype.handleEvent = function(e) {
+	var key = e.keyCode ? e.keyCode : e.which;
+	if (key == 89) {
+	console.log("reload")
+	location.reload(true)
 	}
 }
 
-
-var Player = function(x, y,color,stats,inv) {
+var Player = function(name,x,y,color,stats,inv) {
+	this.name = name;
 	this._x = x;
 	this._y = y;
 	this.color=color;
@@ -478,7 +502,7 @@ Player.prototype.handleEvent = function(e) {
 	/* one of numpad/wasd directions? */
 	if (!(code in keyMap)) { return; }
 	//action for wait and spacebar
-	if (code == 190) {
+	if (code == 190) {//this is temporary
 		Game._generateNextMap();
 		return;
 	}
@@ -534,8 +558,8 @@ Player.prototype.handleEvent = function(e) {
 				curi = i
 			}
 		}
-		if (Game.items[curi].tag=="weapon") {this.inv[0].push(Game.items[curi])}
-		else{this.inv[1].push(Game.items[curi])}
+		if (this.inv[0].find(function(item){return item.desc===Game.items[curi].desc})===undefined && Game.items[curi].tag==="weapon") {this.inv[0].push(Game.items[curi])}
+		else if(Game.items[curi].tag==="consumable"){this.inv[1].push(Game.items[curi])}
 		Game.display.draw(this._x, this._y, Game.map[this._x+","+this._y],'#995024');
 		Game.map[this._x+","+this._y]='.'
 		this._x = newX;
@@ -565,11 +589,7 @@ Player.prototype.handleEvent = function(e) {
 		if (Game.monsters[curm].stats[0]<=0) {
 			//console.log("workign")
 			Game.scheduler.remove(Game.monsters[curm]);
-			Game.display.draw(this._x, this._y, Game.map[this._x+","+this._y],'#995024');
-			Game.map[this._x+","+this._y]='.';
-			this._x = newX;
-			this._y = newY;
-			Game.map[this._x+","+this._y]='@'
+			Game.map[newX+","+newY]='c'
 			this._draw();
 			window.removeEventListener("keydown", this);
 			Game.engine.unlock();
@@ -678,7 +698,15 @@ Player.prototype._use = function(event){
 	if (!(newKey in Game.map)) { return; }
 	if (Game.map[newKey]=='~') {
 		window.removeEventListener("keydown", Game.player._use);
-		Game.player.inv[1].push(new Item(0,0,"consumable",[4,[0,-10]],"Water"))
+		Game.player.inv[1].push(new Item(0,0,"consumable",[4,[-1,-100]],"Water"))
+		Game.player._draw();
+		//console.log("checker")
+		Game.engine.unlock();
+		return;
+	};
+	if (Game.map[newKey]=='c') {
+		window.removeEventListener("keydown", Game.player._use);
+		Game.player.inv[1].push(new Item(0,0,"consumable",[4,[-100,-1]],"Meat"))
 		Game.player._draw();
 		//console.log("checker")
 		Game.engine.unlock();

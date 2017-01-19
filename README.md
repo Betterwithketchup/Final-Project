@@ -1,7 +1,7 @@
 # Final	Project
 Radioactive Cavelier
 todo:
-	item use and inventory completion
+	server integration
 
 Genre:
 	survival/rpg
@@ -34,19 +34,18 @@ technologies used:
 
 Tables:
 Users and Monsters inherit from the same class
-	Users:
+	Users:0
 		Username
 		password
 		CHAR NAME
-		STR =damage  (mod)+10+weapon
+		STR =damage  (STR)+weapon xdy
 		CON = HP (mod)+100
-		DEX = Dodge
-		HP
-		NEEDS
+		DEX = Dodge 1d20+DEX vs opposing
+		HP base 20
+		NEEDS food,water
 		SCORE
-		gear(armor,weapon,item,inv)=foreign key  in items
+		gear(weapon,item)
 	Monsters:
-		type
 		name
 		STATS
 		location
@@ -56,11 +55,6 @@ Users and Monsters inherit from the same class
 		description
 	Maps:
 		entire grid and state of grid
-		movement map
-		User=User.id, location
-		Monsters=Monsters.id, location
-		Items=items.id, and location
-
 Endpoints and (3 templates):
 	Login page
 	main game page

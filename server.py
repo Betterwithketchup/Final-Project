@@ -87,8 +87,8 @@ def load():
 		# print(thinger)
 		#print("this is a name: "+str(session.get('user')))
 		#print(USERNAME)
-		user=User.query.filter_by(username=str(session.get('user'))).first()
-		thingy = [user.id,user.username,user.stats]
+		char=Character.query.filter_by(userid=str(session.get('user'))).first()
+		thingy = [char.charname,char.loc,char.stats, char.gear, char.charmap, char.monsters, char.items]
 		# else:
 		# 	return "na"
 		#session['id']
@@ -102,6 +102,11 @@ def load():
 	response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
 	response.headers['Access-Control-Allow-Credentials'] = 'true'	
 	return response
+
+@app.route('/save', methods=['GET','POST'])
+def save():
+	charname=request.form['charname']
+	stats=request.form['stats']
 
 if __name__ == "__main__":
 	app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'#os.urandom(20)
