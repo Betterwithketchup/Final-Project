@@ -1,0 +1,51 @@
+@import url("https://fonts.googleapis.com/css?family=Roboto:500,700,900");
+@import url("https://fonts.googleapis.com/css?family=Open+Sans");
+
+input[type=submit],button{
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    text-decoration: none;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+#shower{
+	border: 2px solid red;
+    border-radius: 4px;
+}
+#mainevent{
+	font: 2em "Roboto", sans-serif; 
+	float: left;
+	color: white;
+	margin-left:10px;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+ul{
+	list-style-type: none;
+	padding:0;
+	margin:0;
+}
+nav {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+}
+
+.navbar {
+    float: right;
+}
+li{
+	list-style-type: none;
+		font: 1em "Roboto", sans-serif; 
+
+}
+input[type=number]{
+	float: left;
+}
+
+/* Change the link color to #111 (black) on hover */
+li a:hover {
+    background-color: #111;
+}

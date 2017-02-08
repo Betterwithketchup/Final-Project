@@ -23,19 +23,33 @@ class Users():
 		return "Done"
 
 class Characters():
-	def initchar(userid,charname,stats):
+	def initchar(user,charname,stats,gear):
+		db.session.expunge_all()
+		userid=user
 		charname=charname
 		stats=stats
-		#user.gear=gear
-		notperson=Character()
-		db.session.commit(userid,charname,stats,)
-		return "Done"
-
-class Monsters():
-	def initmon(userid,charname,stats,gear):
-		user=User.query.filter_by(id=userid).first()
-		user.charname=charname
-		user.stats=stats
-		user.gear=gear
+		gear=gear
+		char1 = Character(userid,charname,stats,gear)
+		db.session.add(char1)
 		db.session.commit()
 		return "Done"
+
+	def save(user, stats, gear, loc, charmap, monsters, items):
+		char = Character.query.filter_by(userid=user).first()
+		char.stats = stats
+		char.gear = gear
+		char.loc = loc
+		char.map = charmap
+		char.monsters = monsters
+		char.items = items
+		db.session.commit()
+		return "Done"
+
+# class Monsters():
+# 	def initmon(userid,charname,stats,gear):
+# 		user=User.query.filter_by(id=userid).first()
+# 		user.charname=charname
+# 		user.stats=stats
+# 		user.gear=gear
+# 		db.session.commit()
+# 		return "Done"

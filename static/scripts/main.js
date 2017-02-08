@@ -1,19 +1,26 @@
 var $overplayer = null;
 var $data = [null];
-
 var log = "Start"
 var logger = 2;
 $(document).ready(function(){
 	console.log("Ping!");
-	/*$('#logout').on('click', function(event){
+	$('#save').on('click', function(){
 		$.ajax({
-		method: "POST",
-		url: "http://127.0.0.1:3000/weout",
-		success:function(response){
-			//console.log(response)
+			method: "POST",
+			url: "http://127.0.0.1:3000/save",
+			data: JSON.stringify({"stats":Game.player._stats, "gear":Game.player.inv, "loc":[Game.player._x,Game.player._y],"map":Game.map, "monsters":Game.monsters,"items":Game.items}),
+			contentType: 'application/json',
+			dataType: 'json',
+			crossDomain: true,
+			success:function(response){
+				console.log(response)
+				},
+			error:function (response) {
+				console.log(response.getAllResponseHeaders())
+				console.log(response)
 			}
 		})
-	})*/
+	})
 	$('#register').on('click', function(){
 		$('#form').empty()
 		$('#form').append(`
@@ -67,19 +74,28 @@ handleEvent = function(e) {
 		if (parseInt($("#strength").val())+parseInt($("#constitution").val())+parseInt($("#dexterity").val())>15) {return;}
 		event.preventDefault();
 		$("li").hide()
+		$(".navbar").show()
 		$("#submitter").hide()
 		document.body.removeChild(display.getContainer());
 		var $charname = $("#charname").val();
-		var $stats = [20,parseInt($("#strength").val()),parseInt($("#constitution").val()),parseInt($("#dexterity").val()),[10,10]];
-		$overplayer = new Player($charname,0,0,"#FF0000",$stats,[[new Item(0,0,"weapon",[true,1,3],"Fists")],[]])
+		var $stats = [50,parseInt($("#strength").val()),parseInt($("#constitution").val()),parseInt($("#dexterity").val()),[10,10],0];
+		var $gear = [[new Item(1,2,"weapon",[true,1,3],"Fists")],[new Item(0,0,"consumable",[0,10],"Health Potion", (Math.floor(Math.random()*20))+25)]]
+		$overplayer = new Player($charname,0,0,"#FF0000",$stats,$gear)
 		//console.log($stats)
 		$.ajax({
-		method: "POST",
-		url: "http://127.0.0.1:3000/newchar",
-		data: {'charname':$charname,'stats':$stats},
-		//dataType: 'json',
-		success:function(response){
-			//console.log(response)
+			method: "POST",
+			url: "http://127.0.0.1:3000/newchar",
+			//xhrFields: { withCredentials:true },
+			data: JSON.stringify({"charname":$charname,"stats":$stats, "gear":$gear}),
+			contentType: 'application/json',
+			dataType: 'json',
+			crossDomain: true,
+			success:function(response){
+				//console.log(response)
+				},
+			error:function (response) {
+				console.log(response.getAllResponseHeaders())
+				console.log(response)
 			}
 		})
 		
@@ -130,12 +146,14 @@ var Game = {
 	init: function() {
 
 		this.display = new ROT.Display();//setting up the screen
+
 		this.display.setOptions({width:this.screenWidth,height:this.screenHeight,forceSquareRatio:true})
+		this.display.cache = true
 		//this.display.setOptions({width:50,height:30})
 		this.indisplay = new ROT.Display();//setting up the screen
-		this.indisplay.setOptions({width:45,height:3,bg:"#FF0000"})
+		this.indisplay.setOptions({width:45,height:3,bg:"#2B467F"})
 		this.mapdisplay = new ROT.Display();//setting up the screen
-		this.mapdisplay.setOptions({width:50,height:50,bg:"#a00",spacing:0.7,fontSize:7,forceSquareRatio:true})
+		this.mapdisplay.setOptions({width:50,height:50,bg:"#2B467F",spacing:0.7,fontSize:7,forceSquareRatio:true})
 		document.body.appendChild(this.display.getContainer());
 		
 		document.body.appendChild(this.mapdisplay.getContainer());
@@ -256,7 +274,7 @@ var Game = {
 			var parts = key.split(",");
 			var x = parseInt(parts[0]);
 			var y = parseInt(parts[1]);
-			this.items.push(new Item(x,y,"consumable",[0,10],"Health Potion"))
+			this.items.push(new Item(x,y,"consumable",[0,10],"Health Potion", (Math.floor(Math.random()*20))+25))
 		}
 		for (var i=0;i<10;i++) {
 			var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
@@ -265,7 +283,9 @@ var Game = {
 			var parts = key.split(",");
 			var x = parseInt(parts[0]);
 			var y = parseInt(parts[1]);
-			this.items.push(new Item(x,y,"weapon",[false,1,5],"Sword"))
+			var first = Math.floor(Math.random()*2)+1
+			var second = Math.floor(Math.random()*5)+1
+			this.items.push(new Item(x,y,"weapon",[false,first,second],first+"d"+second+" Sword", (Math.floor(Math.random()*50))+(10*second)))
 		}
 		var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
 		var key = freeCells.splice(index, 1)[0];
@@ -281,7 +301,7 @@ var Game = {
 			//this.display.draw(x, y, 'K', '#FF0000');
 			//this.monsters.push(new Monster(x,y,0,[10,2,0,5]))
 			this.map[key] = "K";
-			this.monsters.push(new Monster(x,y,i,[20,2,2,5],[new Item(x,y,"weapon",[true,1,2],"Sword")]))
+			this.monsters.push(new Monster(x,y,i,[Math.floor(Math.random()*(10))+10,2,2,5,Math.floor(Math.random()*(50))+50],[new Item(x,y,"weapon",[true,1,2],"Sword")]))
 		}
 	},
 	//display:65,26
@@ -306,7 +326,7 @@ var Game = {
 					Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#9D00FF');
 				}
 				if (Game.map[(px+i)+","+(py+j)]=="+") {
-					Game.display.draw(i, j, '+', this.player.color,'#000000');
+					Game.display.draw(i, j, '+', "#CF7800",'#000000');
 				}
 			   if (Game.map[(px+i)+","+(py+j)]==".") {
 					Game.display.draw(i, j, Game.map[(px+i)+","+(py+j)], '#995024');
@@ -338,18 +358,18 @@ var Game = {
 		for (var i = Game.screenWidth - 1; i >= 31; i--) {
 			Game.display.drawText(i,j,"%b{black}%c{black}-")
 		}
-	}
+	}	Game.indisplay.clear()
 		Game.indisplay.drawText(0, logger, log, 40);
-		Game.indisplay.drawText(0,0,Game.player.name)
+		Game.display.drawText(31,0,Game.player.name)
 
 		Game.display.drawText(31,1, '%b{black}|X:'+this.player._x+', Y:'+this.player._y+'');
-	
+		Game.display.drawText(31,2, '%b{black}|Score:'+this.player._stats[5]+'')
 		Game.display.drawText(31,3, '%b{black}|HP: '+this.player._stats[0]+'');
 		Game.display.drawText(31,4, '%b{black}|STR: '+this.player._stats[1]+'');
 		Game.display.drawText(31,5, '%b{black}|CON: '+this.player._stats[2]+'');
 		Game.display.drawText(31,6, '%b{black}|DEX: '+this.player._stats[3]+'');
 		Game.display.drawText(31,10, '%b{black}|Weapons:');
-		Game.display.drawText(31,14, '%b{black}|Consumables:');
+		Game.display.drawText(31,11+this.player.inv[0].length, '%b{black}|Consumables:');
 		
 		if (this.player._stats[4][0]>50) {Game.display.drawText(31,7, '%b{black}|Hungry'+this.player._stats[4][0]);}
 		if (this.player._stats[4][1]>50) {Game.display.drawText(31,8, '%b{black}|Thirsty'+this.player._stats[4][1]);}
@@ -364,20 +384,21 @@ var Game = {
 		}
 		for (var i = 0; i <= this.player.inv[1].length; i++) {
 			if (this.player.inv[1][i]!=null) {
-				Game.display.drawText(31,15+i, '%b{black}|'+this.player.inv[1][i].desc+'');
+				Game.display.drawText(31,12+i+this.player.inv[0].length, '%b{black}|'+this.player.inv[1][i].desc+'');
 				}	
 		}
 		var sel = this.player.select;
 		if (sel<this.player.inv[0].length) {Game.display.drawText(31,11+sel, '%b{blue}|'+this.player.inv[0][sel].desc+'');}
-		else{Game.display.drawText(31,15+sel-this.player.inv[0].length, '%b{blue}|'+this.player.inv[1][sel-this.player.inv[0].length].desc+'');}
+		else{Game.display.drawText(31,12+sel+this.player.inv[0].length-this.player.inv[1].length, '%b{blue}|'+this.player.inv[1][sel-this.player.inv[0].length].desc+'');}
 	}
 }
-var Item = function(x,y,tag,stats,description) {
+var Item = function(x,y,tag,stats,description, score) {
 	this.x = x;
 	this.y = y;
 	this.tag = tag;
 	this.stats = stats;
 	this.desc = description;
+	this.score=score;
 }
 var Monster = function(x,y,name,stats,inv){
 	this.x = x;
@@ -434,6 +455,7 @@ Monster.prototype._combat = function(curm) {
 	logger-=1;
 	log+="\nThe monster hits you!"
 	}
+	return;
 } 
 Monster.prototype.act = function(){
 	//console.log(Game.scheduler.getTime())
@@ -446,7 +468,7 @@ Monster.prototype.act = function(){
 		document.body.removeChild(Game.indisplay.getContainer());
 		document.body.removeChild(Game.mapdisplay.getContainer());
 		Game.display.clear()
-		Game.display.draw(1,1,"You lose! \nRestart? y/n")
+		Game.display.draw(1,1,"You lose! Restart? y/n")
 		window.addEventListener("keydown", this);
 	}
 }
@@ -464,7 +486,6 @@ var Player = function(name,x,y,color,stats,inv) {
 	this._y = y;
 	this.color=color;
 	this._stats=stats;
-	//this.stats[3]=stats[3];
 	//this.score=0;
 	this.inv = inv;
 	this.select=0;
@@ -501,7 +522,7 @@ Player.prototype.handleEvent = function(e) {
 	var code = e.keyCode;
 	/* one of numpad/wasd directions? */
 	if (!(code in keyMap)) { return; }
-	//action for wait and spacebar
+	
 	if (code == 190) {//this is temporary
 		Game._generateNextMap();
 		return;
@@ -511,6 +532,7 @@ Player.prototype.handleEvent = function(e) {
 		this._checkAction();
 		return;
 	}
+
 	if (code == 101) {
 		this._draw();
 		window.removeEventListener("keydown", this);
@@ -546,6 +568,9 @@ Player.prototype.handleEvent = function(e) {
 	if (!(newKey in Game.map)) { return; }
 
 	if (Game.map[newKey]==='>'){
+		logger-=1;
+		log+=("\nYou found the stairs")
+		this._stats[5]+=1000;
 		Game._generateNextMap();
 		window.removeEventListener("keydown", this);
 		Game.engine.unlock();
@@ -555,9 +580,10 @@ Player.prototype.handleEvent = function(e) {
 	if (Game.map[newKey]==='*' || Game.map[newKey]==='+') {//pickup function
 		for (var i = Game.items.length - 1; i >= 0; i--) {
 			if (Game.items[i].x+","+Game.items[i].y===newKey){
-				curi = i
+				var curi = i
 			}
 		}
+		this._stats[5]+=Game.items[curi].score;
 		if (this.inv[0].find(function(item){return item.desc===Game.items[curi].desc})===undefined && Game.items[curi].tag==="weapon") {this.inv[0].push(Game.items[curi])}
 		else if(Game.items[curi].tag==="consumable"){this.inv[1].push(Game.items[curi])}
 		Game.display.draw(this._x, this._y, Game.map[this._x+","+this._y],'#995024');
@@ -590,6 +616,7 @@ Player.prototype.handleEvent = function(e) {
 			//console.log("workign")
 			Game.scheduler.remove(Game.monsters[curm]);
 			Game.map[newX+","+newY]='c'
+			this._stats[5]+=Game.monsters[curm].stats[4]
 			this._draw();
 			window.removeEventListener("keydown", this);
 			Game.engine.unlock();
@@ -614,7 +641,7 @@ Player.prototype._draw = function() {
 function diceRoll(times,sides) {
 	var result = 1;
 	for (var i = times; i > 0; i--) {
-		result+=(Math.floor(Math.random()*sides));
+		result+=(Math.floor(Math.random()*(sides)))+1;
 		//console.log("result "+result)
 	}
 	
@@ -634,13 +661,17 @@ Player.prototype._combat = function(curm) {
 Player.prototype._checkAction = function() {
 	//this.color=("rgb("+ROT.Color.randomize([100, 128, 230], [30, 10, 20])+")")
 	var sel = this.select;
-	if (this.select>=this.inv[0].length) {sel = this.select-this.inv[0].length}
-	if (this.inv[1][0]!=null && (sel)>-1) {
-	//console.log("sel+inv "+(sel))
-	var number = this.inv[1][sel].stats[1]
-	var statto = this.inv[1][sel].stats[0]
+	if (this.select>this.inv[0].length) {
+		sel = this.select-this.inv[0].length;
+		var number = this.inv[1][sel].stats[1]
+		var statto = this.inv[1][sel].stats[0]
+		console.log(sel)
 	}
-	if (this.select<=this.inv[0].length-1){
+	if (this.inv[1][0]!=null && (sel)>=0) {
+	console.log("sel+inv "+(sel))
+	
+	}
+	if (this.select<=this.inv[0].length){
 		for (var i = this.inv[0].length - 1; i >= 0; i--) {
 			this.inv[0][i].stats[0]=false;
 		}
@@ -666,8 +697,6 @@ Player.prototype._checkAction = function() {
 		return;
 	}
 	else{
-		//number = this.inv[1][sel].stats[1]
-		//statto = this.inv[1][sel].stats[0]
 		logger-=1;
 		log+=("\nYou consume your "+this.inv[1][sel].desc);
 		this.inv[1].splice(sel,1)
@@ -707,6 +736,7 @@ Player.prototype._use = function(event){
 	if (Game.map[newKey]=='c') {
 		window.removeEventListener("keydown", Game.player._use);
 		Game.player.inv[1].push(new Item(0,0,"consumable",[4,[-100,-1]],"Meat"))
+		Game.map[newKey]='.'
 		Game.player._draw();
 		//console.log("checker")
 		Game.engine.unlock();

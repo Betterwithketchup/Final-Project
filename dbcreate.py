@@ -25,8 +25,8 @@ class Character(db.Model):
 	monsters = db.Column(db.PickleType())
 	items = db.Column(db.PickleType())
 
-	def __init__(self, charname, stats,gear):
-		self.username = username
+	def __init__(self, userid, charname, stats,gear):
+		self.userid = userid
 		self.charname = charname
 		self.stats = stats
 		self.gear = gear
@@ -71,4 +71,6 @@ if __name__ == "__main__":
 	db.create_all()
 	User1 = User("A","$2b$12$2FuNpiQtd4ChkJlHhI9GU.K87giuywJ3VGMGPXgZlwS30R3sl2fwC")
 	db.session.add(User1)
+	# Char1 = Character("1","Blarg",[20,5,5,5,5],[[],[]])
+	# db.session.add(Char1)
 	db.session.commit()

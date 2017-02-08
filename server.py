@@ -1,9 +1,10 @@
 from flask import Flask, request, render_template, jsonify, session, redirect,url_for,Response
 from Models import *
+from flask_cors import CORS
 import os
 app = Flask(__name__)
 
-
+cors = CORS(app)
 @app.route('/',methods=['GET'])
 def nothere():
 	return redirect(url_for('login'))
@@ -32,17 +33,18 @@ def data():
 	name=request.form['username']
 	password=request.form['password']
 	user=User.query.filter_by(username=name).first()
-	if islegit(name,password)=="True":
-		#print(user.username)
+	if islegit(name,password)==True:
+		print(user.id)
 		session['id']=user.id
+		session.modified = True
 		session['logged_in']=True
+		session.modified = True
 		session['user']=user.username
 		session.modified = True
-		USERNAME=user.id
-		#print(USERNAME)
 		return redirect(url_for('main'))
 	else:
 		session['logged_in']=False
+		session.modified = True
 		return redirect(url_for('login'))
 
 def islegit(Name,wordpass):
@@ -50,7 +52,7 @@ def islegit(Name,wordpass):
 	#print(user.username)
 	if user != None:
 		if bcrypt.check_password_hash(user.password, wordpass)==True:
-			return "True"
+			return True
 		else:
 			return "False"
 	else:
@@ -63,31 +65,46 @@ def addin():
 	Users.inituser(newuser,newpass)
 	return "Done"#redirect(url_for('login'))
 
+
 @app.route('/newchar', methods=['POST'])
 def addinchar():
-	charname=request.form['charname']
-	stats=request.form['stats']
-	Characters.initchar(charname,stats)
-	return "Done"
+	print("ID: "+str(session.get('id')))
+	#print(request.get_json()['charname'])
+	charname=request.get_json()['charname']
+	stats=request.get_json()['stats']
+	gear=request.get_json()['gear']
+	Characters.initchar(str(session.get('id')),charname,stats,gear)
+	response = Response("done")
+	response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+	response.headers['Access-Control-Allow-Credentials'] = 'true'	
+	return response
 
 
 @app.route('/main', methods=['GET'])
 def main():
-	#print(session.get('logged_in'))
+	print("Main: "+str(session.get('logged_in')))
 	if session.get('logged_in')==True:
-		#print("session:"+str(session.get('user')))
+		print("session:"+str(session.get('user')))
+		print("ID: "+str(session.get('id')))
 		return render_template('mainpage.html',)
 	else:
 		return redirect(url_for('login'))
 
-@app.route('/load', methods=['GET','POST'])
+@app.route('/favicon.ico', methods=['GET'])
+def favicon():
+	return;
+
+@app.route('/load', methods=['GET'])
 def load():
+	print("ID: "+str(session.get('id')))
+	print("loadlog"+str(session.get('logged_in')))
+	thinger = session.get('logged_in')
 	if session.get('logged_in')==True:
 		# thinger=request.form['name']
 		# print(thinger)
 		#print("this is a name: "+str(session.get('user')))
 		#print(USERNAME)
-		char=Character.query.filter_by(userid=str(session.get('user'))).first()
+		char=Character.query.filter_by(userid=str(session.get('id'))).first()
 		thingy = [char.charname,char.loc,char.stats, char.gear, char.charmap, char.monsters, char.items]
 		# else:
 		# 	return "na"
@@ -105,8 +122,20 @@ def load():
 
 @app.route('/save', methods=['GET','POST'])
 def save():
-	charname=request.form['charname']
-	stats=request.form['stats']
+	print("ID: "+str(session.get('id')))
+	user=str(session.get('id'))
+	stats=request.get_json()['stats']
+	gear = request.get_json()['gear']
+	loc = request.get_json()['loc']
+	charmap = request.get_json()['map']
+	monsters = request.get_json()['monsters']
+	items = request.get_json()['items']
+	Characters.save(user,stats,gear,loc,charmap,monsters,items)
+	response = Response("done")
+	response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+	response.headers['Access-Control-Allow-Credentials'] = 'true'	
+	return response
+
 
 if __name__ == "__main__":
 	app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'#os.urandom(20)

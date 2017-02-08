@@ -6,14 +6,16 @@
 
 
 {% block content %}
-<h1>{{ content }}</h1>
-<form action="/weout" method="POST" id="getout" >
-	<input type="submit" value="logout" id="logout"></input>
-</form>
-<!-- <button id="load" class=' ' action="/load">Load</button> -->
-<button id="save" class=' ' action="/save">Save</button>
+<nav>
+	<ul>
+	<h3 id="mainevent">Radioactive Cavalier</h3>
+  	<li class="navbar"><form action="/weout" method="POST" id="getout" >
+	<input type="submit" value="Logout" id="logout"></input></form></li>
+ 	<li class="navbar"><button id="save" class=' ' action="/">Save</button></li>
+	</ul>
+</nav>
+
 <body>
-    <div id="mainevent">Radioactive Cavalier</div>
 </body>
 <button id="shower">Start</button>
 
